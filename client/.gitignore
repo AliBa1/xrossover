@@ -30,3 +30,23 @@
 *.exe
 *.out
 *.app
+
+# CMake build directory
+build/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# macOS specific
+.DS_Store
+
+# VSCode settings (optional if you're sharing them)
+.vscode/
+
+# CLion / JetBrains IDEs
+.idea/
+
