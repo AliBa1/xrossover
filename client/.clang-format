@@ -1,0 +1,4 @@
+BinPackArguments: false
+BreakBeforeBracedInitializers: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+Cpp11BracedListStyle: true

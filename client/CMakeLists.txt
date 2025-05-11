@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
 
-add_executable(xrossover main.cpp)
+add_executable(xrossover src/main.cpp)
 
 # target_include_directories(xrossover PUBLIC ${SDL3_INCLUDE_DIRS})
 # target_compile_definitions(xrossover PRIVATE SDL_MAIN_USE_CALLBACKS)
