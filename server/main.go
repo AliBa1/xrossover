@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 )
@@ -44,9 +45,14 @@ func handleTCPConnection(conn net.Conn) {
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
-			log.Fatalln("Error:", err)
+			if err == io.EOF {
+				log.Println("Client Disconnected")
+				break
+			}
+			log.Println("Error:", err)
+			break
 		}
-		log.Println("Recieved:", buffer[:n])
+		log.Println("Recieved:", string(buffer[:n]))
 	}
 }
 
@@ -60,7 +66,6 @@ func startUDP() {
 	if err != nil {
 		log.Fatalln("Error:", err)
 	}
-	// defer conn.Close()
 
 	fmt.Println("Listening UDP on port", UDPPORT)
 
@@ -73,11 +78,11 @@ func handleUDPConnection(conn *net.UDPConn) {
 	buffer := make([]byte, 1024)
 
 	for {
-		n, addr, err := conn.ReadFromUDP(buffer)
+		n, _, err := conn.ReadFromUDP(buffer)
 		if err != nil {
-			log.Fatalln("Error:", err)
+			log.Println("Error:", err)
 		}
 
-		log.Println("From:", addr, "Recieved:", buffer[:n])
+		log.Println("Recieved:", string(buffer[:n]))
 	}
 }

@@ -1,28 +1,35 @@
 package game
 
 import (
+	"log"
+	"net"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const (
-	WIDTH  = 800
-	HEIGHT = 450
+	WIDTH   = 800
+	HEIGHT  = 450
+	HOST    = "localhost"
+	TCPPORT = "50000"
+	UDPPORT = "50001"
 )
 
 type Game struct {
 	camera       rl.Camera3D
 	cubePosition rl.Vector3
+	tcpConn      net.Conn
+	udpConn      net.Conn
 }
 
 func (g *Game) Run() {
-	rl.InitWindow(WIDTH, HEIGHT, "Game Window")
-	defer rl.CloseWindow()
-
 	g.initialize()
 	g.loop()
+	g.shutdown()
 }
 
 func (g *Game) initialize() {
+	rl.InitWindow(WIDTH, HEIGHT, "Game Window")
 	g.camera = rl.Camera3D{
 		Position:   rl.Vector3{X: 0.0, Y: 10.0, Z: 10.0},
 		Target:     rl.Vector3{X: 0.0, Y: 0.0, Z: 0.0},
@@ -45,6 +52,18 @@ func (g *Game) loop() {
 
 }
 
+func (g *Game) shutdown() {
+	rl.CloseWindow()
+
+	if g.tcpConn != nil {
+		g.tcpConn.Close()
+	}
+
+	if g.udpConn != nil {
+		g.udpConn.Close()
+	}
+}
+
 func (g *Game) updateDrawing() {
 	rl.ClearBackground(rl.RayWhite)
 
@@ -52,7 +71,12 @@ func (g *Game) updateDrawing() {
 	g.update3DOutput()
 	rl.EndMode3D()
 
-	// rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
+	if g.tcpConn != nil && g.udpConn != nil {
+		rl.DrawText("Connected to Server", WIDTH-rl.MeasureText("Connected to Server", 20)-10, 20, 20, rl.Black)
+	} else {
+		rl.DrawText("Press [C] to connect to server", WIDTH-rl.MeasureText("Press [C] to connect to server", 20)-10, 20, 20, rl.Black)
+	}
+
 	rl.DrawFPS(20, 20)
 }
 
@@ -63,6 +87,7 @@ func (g *Game) update3DOutput() {
 }
 
 func (g *Game) processInput() {
+	// move cube
 	if rl.IsKeyDown(rl.KeyW) {
 		g.cubePosition.Z -= 0.05
 	} else if rl.IsKeyDown(rl.KeyS) {
@@ -71,5 +96,45 @@ func (g *Game) processInput() {
 		g.cubePosition.X -= 0.05
 	} else if rl.IsKeyDown(rl.KeyD) {
 		g.cubePosition.X += 0.05
+	}
+
+	// connect to server
+	if rl.IsKeyPressed(rl.KeyC) && g.tcpConn == nil {
+		g.connectToTCP()
+		g.connectToUDP()
+	}
+}
+
+func (g *Game) connectToTCP() {
+	log.Println("Starting TCP connection to server...")
+	var d net.Dialer
+	var err error
+	g.tcpConn, err = d.Dial("tcp", HOST+":"+TCPPORT)
+	if err != nil {
+		log.Println("Error connecting to server via TCP:", err)
+		return
+	}
+
+	_, err = g.tcpConn.Write([]byte("I have connected via TCP"))
+	if err != nil {
+		log.Println("Error writing to server via TCP:", err)
+		return
+	}
+}
+
+func (g *Game) connectToUDP() {
+	log.Println("Starting UDP connection to server...")
+	var d net.Dialer
+	var err error
+	g.udpConn, err = d.Dial("udp", HOST+":"+UDPPORT)
+	if err != nil {
+		log.Println("Error connecting to server via UDP:", err)
+		return
+	}
+
+	_, err = g.udpConn.Write([]byte("I have connected via UDP"))
+	if err != nil {
+		log.Println("Error writing to server via UDP:", err)
+		return
 	}
 }
