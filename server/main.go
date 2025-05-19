@@ -12,7 +12,13 @@ var (
 	UDPPORT = "50001"
 )
 
+type Client struct {
+	tcpConn net.Conn
+	udpConn net.UDPConn
+}
+
 func main() {
+	// var clients []Client
 	fmt.Println("Welcome to the Game Server!")
 	go startTCP()
 	go startUDP()
