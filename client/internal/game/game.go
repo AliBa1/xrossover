@@ -3,6 +3,7 @@ package game
 import (
 	"log"
 	"net"
+	"xrossover-client/internal/buffer"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -16,6 +17,7 @@ const (
 )
 
 type Game struct {
+	Username     string
 	camera       rl.Camera3D
 	cubePosition rl.Vector3
 	tcpConn      net.Conn
@@ -115,7 +117,12 @@ func (g *Game) connectToTCP() {
 		return
 	}
 
-	_, err = g.tcpConn.Write([]byte("I have connected via TCP"))
+	// _, err = g.tcpConn.Write([]byte("I have connected via TCP"))
+	// _, err = g.tcpConn.Write([]byte{'A'}, []byte(g.Username))
+
+	// data := append([]byte{'A'}, []byte(g.Username)...)
+	data := buffer.SerializeConnectionRequest(g.Username)
+	_, err = g.tcpConn.Write(data)
 	if err != nil {
 		log.Println("Error writing to server via TCP:", err)
 		return
@@ -132,7 +139,8 @@ func (g *Game) connectToUDP() {
 		return
 	}
 
-	_, err = g.udpConn.Write([]byte("I have connected via UDP"))
+	// _, err = g.udpConn.Write([]byte("I have connected via UDP"))
+	_, err = g.udpConn.Write([]byte(g.Username))
 	if err != nil {
 		log.Println("Error writing to server via UDP:", err)
 		return

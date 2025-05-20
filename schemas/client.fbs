@@ -1,0 +1,7 @@
+namespace xrossover;
+
+table ConnectionRequest {
+	username: string;
+}
+
+root_type ConnectionRequest;
