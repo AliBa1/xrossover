@@ -2,7 +2,7 @@ package buffer
 
 import (
 	flatbuffers "github.com/google/flatbuffers/go"
-	schema "xrossover-client/flatbuffers/xrossover"
+	protocol "xrossover-client/flatbuffers/xrossover"
 )
 
 func SerializeConnectionRequest(username string) []byte {
@@ -10,10 +10,17 @@ func SerializeConnectionRequest(username string) []byte {
 
 	user := builder.CreateString(username)
 
-	schema.ConnectionRequestStart(builder)
-	schema.ConnectionRequestAddUsername(builder, user)
-	client := schema.ConnectionRequestEnd(builder)
+	protocol.ConnectionRequestStart(builder)
+	protocol.ConnectionRequestAddUsername(builder, user)
+	connReq := protocol.ConnectionRequestEnd(builder)
 
-	builder.Finish(client)
+	protocol.NetworkMessageStart(builder)
+	// protocol.NetworkMessageAddType(builder, flatbuffers.UOffsetT(protocol.PayloadConnectionRequest))
+	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadConnectionRequest)
+	protocol.NetworkMessageAddPayload(builder, connReq)
+	netMsg := protocol.NetworkMessageEnd(builder)
+
+	builder.Finish(netMsg)
+
 	return builder.FinishedBytes()
 }

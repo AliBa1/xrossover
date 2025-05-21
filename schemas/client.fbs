@@ -4,4 +4,13 @@ table ConnectionRequest {
 	username: string;
 }
 
-root_type ConnectionRequest;
+union Payload {
+	ConnectionRequest
+}
+
+table NetworkMessage {
+	// type: Payload;
+	payload: Payload;
+}
+
+root_type NetworkMessage;

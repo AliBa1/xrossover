@@ -6,7 +6,9 @@ import (
 	"log"
 	"net"
 	"sync"
-	schema "xrossover-server/flatbuffers/xrossover"
+	protocol "xrossover-server/flatbuffers/xrossover"
+
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 const (
@@ -17,7 +19,6 @@ const (
 var (
 	clients      = map[string]*Client{}
 	clientsMutex sync.Mutex
-	// ClientID = "1"
 )
 
 type Client struct {
@@ -74,16 +75,20 @@ func handleTCPConnection(conn net.Conn) {
 		}
 
 		// msg := strings.TrimSpace(string(buffer[:n]))
-		connReq := schema.GetRootAsConnectionRequest(buffer[:n], 0)
-		username := string(connReq.Username())
-		if len(username) > 0 {
+		msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
+		switch msg.PayloadType() {
+		case protocol.PayloadConnectionRequest:
 			log.Println("adding to clients")
-			addClient(username, conn)
-		} else {
-			// log.Println("Received:", msg)
-			log.Println("Received without username")
+			table := new(flatbuffers.Table)
+			if msg.Payload(table) {
+				connReq := new(protocol.ConnectionRequest)
+				connReq.Init(table.Bytes, table.Pos)
+				username := string(connReq.Username())
+				addClient(username, conn)
+			}
+		default:
+			log.Println("Received without type:", msg.PayloadType())
 		}
-
 	}
 }
 
@@ -157,27 +162,27 @@ func handleUDPConnection(conn *net.UDPConn, addr *net.UDPAddr) {
 	defer conn.Close()
 
 	// id := conn.RemoteAddr().String()
-	username := make([]byte, 1024)
-	n, err := conn.Read(username)
-	if err != nil {
-		log.Println("Failed reading username:", err)
-		return
-	}
-
-	id := string(username[:n])
-
-	clientsMutex.Lock()
-	client, exists := clients[id]
-	if !exists {
-		client = &Client{
-			ID:      id,
-			udpAddr: addr,
-		}
-		clients[id] = client
-	} else {
-		clients[id].udpAddr = addr
-	}
-	clientsMutex.Unlock()
+	// username := make([]byte, 1024)
+	// n, err := conn.Read(username)
+	// if err != nil {
+	// 	log.Println("Failed reading username:", err)
+	// 	return
+	// }
+	//
+	// id := string(username[:n])
+	//
+	// clientsMutex.Lock()
+	// client, exists := clients[id]
+	// if !exists {
+	// 	client = &Client{
+	// 		ID:      id,
+	// 		udpAddr: addr,
+	// 	}
+	// 	clients[id] = client
+	// } else {
+	// 	clients[id].udpAddr = addr
+	// }
+	// clientsMutex.Unlock()
 
 	buffer := make([]byte, 1024)
 
