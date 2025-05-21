@@ -22,8 +22,8 @@ var (
 )
 
 type Client struct {
-	ID      string
-	tcpConn net.Conn
+	Username string
+	tcpConn  net.Conn
 	// udpConn net.UDPConn
 	udpAddr *net.UDPAddr
 }
@@ -74,73 +74,49 @@ func handleTCPConnection(conn net.Conn) {
 			break
 		}
 
-		// msg := strings.TrimSpace(string(buffer[:n]))
-		msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
-		switch msg.PayloadType() {
-		case protocol.PayloadConnectionRequest:
-			log.Println("adding to clients")
-			table := new(flatbuffers.Table)
-			if msg.Payload(table) {
-				connReq := new(protocol.ConnectionRequest)
-				connReq.Init(table.Bytes, table.Pos)
-				username := string(connReq.Username())
-				addClient(username, conn)
-			}
-		default:
-			log.Println("Received without type:", msg.PayloadType())
-		}
+		readTCP(conn, buffer, n)
 	}
 }
 
-func addClient(id string, conn net.Conn) {
+func readTCP(conn net.Conn, buffer []byte, n int) {
+	msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
+	switch msg.PayloadType() {
+	case protocol.PayloadConnectionRequest:
+		log.Println("adding to clients")
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			connReq := new(protocol.ConnectionRequest)
+			connReq.Init(table.Bytes, table.Pos)
+			username := string(connReq.Username())
+			udpStr := string(connReq.Udpaddr())
+			addClient(username, conn, udpStr)
+		}
+	default:
+		log.Println("Received without type:", msg.PayloadType())
+	}
+}
+
+func addClient(username string, conn net.Conn, udpStr string) {
+	udpAddr, err := net.ResolveUDPAddr("udp", udpStr)
+	if err != nil {
+		log.Println("Error getting client udp address:", err)
+	}
 	clientsMutex.Lock()
-	client, exists := clients[id]
+	client, exists := clients[username]
 	if !exists {
 		client = &Client{
-			ID:      id,
-			tcpConn: conn,
+			Username: username,
+			tcpConn:  conn,
+			udpAddr:  udpAddr,
 		}
-		clients[id] = client
+		clients[username] = client
 	} else {
-		clients[id].tcpConn = conn
+		clients[username].tcpConn = conn
+		clients[username].udpAddr = udpAddr
 	}
 	clientsMutex.Unlock()
-	log.Println(id, "added to clients")
+	log.Println(username, "added to clients")
 }
-
-// func readTCP(c *Client) {
-// 	defer c.tcpConn.Close()
-//
-// 	buffer := make([]byte, 1024)
-//
-// 	for {
-// 		n, err := c.tcpConn.Read(buffer)
-// 		if err != nil {
-// 			if err == io.EOF {
-// 				log.Println("Client Disconnected")
-// 			} else {
-// 				log.Println("Error erere:", err)
-// 			}
-//
-// 			clientsMutex.Lock()
-// 			delete(clients, c.ID)
-// 			clientsMutex.Unlock()
-// 			break
-// 		}
-// 		log.Println("Recieved:", string(buffer[:n]))
-// 		if string(buffer[:n])[0] == 'A' {
-// 			username := string(buffer[:n])
-// 			_, err := c.tcpConn.Read(buffer)
-// 			if err != nil {
-// 				log.Println("Failed reading username:", err)
-// 				return
-// 			}
-// 			addClient(username, c.tcpConn)
-//
-// 		}
-// 	}
-//
-// }
 
 func startUDP() {
 	addr, err := net.ResolveUDPAddr("udp", ":"+UDPPort)
@@ -155,34 +131,11 @@ func startUDP() {
 
 	fmt.Println("Listening UDP on port", UDPPort)
 
-	go handleUDPConnection(conn, addr)
+	go handleUDPConnection(conn)
 }
 
-func handleUDPConnection(conn *net.UDPConn, addr *net.UDPAddr) {
+func handleUDPConnection(conn *net.UDPConn) {
 	defer conn.Close()
-
-	// id := conn.RemoteAddr().String()
-	// username := make([]byte, 1024)
-	// n, err := conn.Read(username)
-	// if err != nil {
-	// 	log.Println("Failed reading username:", err)
-	// 	return
-	// }
-	//
-	// id := string(username[:n])
-	//
-	// clientsMutex.Lock()
-	// client, exists := clients[id]
-	// if !exists {
-	// 	client = &Client{
-	// 		ID:      id,
-	// 		udpAddr: addr,
-	// 	}
-	// 	clients[id] = client
-	// } else {
-	// 	clients[id].udpAddr = addr
-	// }
-	// clientsMutex.Unlock()
 
 	buffer := make([]byte, 1024)
 

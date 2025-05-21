@@ -2,6 +2,7 @@ namespace xrossover;
 
 table ConnectionRequest {
 	username: string;
+	udpaddr: string;
 }
 
 union Payload {
@@ -9,7 +10,6 @@ union Payload {
 }
 
 table NetworkMessage {
-	// type: Payload;
 	payload: Payload;
 }
 

@@ -117,11 +117,12 @@ func (g *Game) connectToTCP() {
 		return
 	}
 
-	// _, err = g.tcpConn.Write([]byte("I have connected via TCP"))
-	// _, err = g.tcpConn.Write([]byte{'A'}, []byte(g.Username))
+	udpAddr, err := net.ResolveUDPAddr("udp", HOST+":"+UDPPORT)
+	if err != nil {
+		log.Println("Failed to get UDP address:", err)
+	}
 
-	// data := append([]byte{'A'}, []byte(g.Username)...)
-	data := buffer.SerializeConnectionRequest(g.Username)
+	data := buffer.SerializeConnectionRequest(g.Username, udpAddr)
 	_, err = g.tcpConn.Write(data)
 	if err != nil {
 		log.Println("Error writing to server via TCP:", err)
@@ -139,8 +140,7 @@ func (g *Game) connectToUDP() {
 		return
 	}
 
-	// _, err = g.udpConn.Write([]byte("I have connected via UDP"))
-	_, err = g.udpConn.Write([]byte(g.Username))
+	_, err = g.udpConn.Write([]byte("This is " + g.Username + " via UDP"))
 	if err != nil {
 		log.Println("Error writing to server via UDP:", err)
 		return

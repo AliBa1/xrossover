@@ -49,11 +49,22 @@ func (rcv *ConnectionRequest) Username() []byte {
 	return nil
 }
 
+func (rcv *ConnectionRequest) Udpaddr() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func ConnectionRequestStart(builder *flatbuffers.Builder) {
-	builder.StartObject(1)
+	builder.StartObject(2)
 }
 func ConnectionRequestAddUsername(builder *flatbuffers.Builder, username flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(username), 0)
+}
+func ConnectionRequestAddUdpaddr(builder *flatbuffers.Builder, udpaddr flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(udpaddr), 0)
 }
 func ConnectionRequestEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()
