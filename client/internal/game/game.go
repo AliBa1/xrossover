@@ -17,11 +17,12 @@ const (
 )
 
 type Game struct {
-	Username     string
-	camera       rl.Camera3D
-	cubePosition rl.Vector3
-	tcpConn      net.Conn
-	udpConn      net.Conn
+	Username string
+	camera   rl.Camera3D
+	box      *PlayerBox
+	// cubePosition rl.Vector3
+	tcpConn net.Conn
+	udpConn net.Conn
 }
 
 func (g *Game) Run() {
@@ -39,7 +40,8 @@ func (g *Game) initialize() {
 		Fovy:       45.0,
 		Projection: rl.CameraPerspective,
 	}
-	g.cubePosition = rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0}
+	// g.cubePosition = rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0}
+	g.box = NewPlayerBox()
 
 	rl.SetTargetFPS(60)
 }
@@ -83,21 +85,26 @@ func (g *Game) updateDrawing() {
 }
 
 func (g *Game) update3DOutput() {
-	rl.DrawCube(g.cubePosition, 1.0, 1.0, 1.0, rl.Red)
-	rl.DrawCubeWires(g.cubePosition, 1.0, 1.0, 1.0, rl.Maroon)
+	// rl.DrawCube(g.cubePosition, 1.0, 1.0, 1.0, rl.Red)
+	rl.DrawCube(g.box.position, g.box.width, g.box.height, g.box.length, g.box.color)
+	rl.DrawCubeWires(g.box.position, 1.0, 1.0, 1.0, rl.Maroon)
 	rl.DrawGrid(10, 1.0)
 }
 
 func (g *Game) processInput() {
 	// move cube
 	if rl.IsKeyDown(rl.KeyW) {
-		g.cubePosition.Z -= 0.05
+		// g.cubePosition.Z -= 0.05
+		g.box.Move(0.0, 0.0, -0.05)
 	} else if rl.IsKeyDown(rl.KeyS) {
-		g.cubePosition.Z += 0.05
+		// g.cubePosition.Z += 0.05
+		g.box.Move(0.0, 0.0, 0.05)
 	} else if rl.IsKeyDown(rl.KeyA) {
-		g.cubePosition.X -= 0.05
+		// g.cubePosition.X -= 0.05
+		g.box.Move(-0.05, 0.0, 0.0)
 	} else if rl.IsKeyDown(rl.KeyD) {
-		g.cubePosition.X += 0.05
+		// g.cubePosition.X += 0.05
+		g.box.Move(0.05, 0.0, 0.0)
 	}
 
 	// connect to server
