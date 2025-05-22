@@ -161,12 +161,12 @@ func handleUDPConnection(conn *net.UDPConn) {
 		}
 
 		log.Println("Recieved:", string(buffer[:n]))
-		readUDP(conn, buffer, n)
+		readUDP(buffer, n)
 		// conn.WriteToUDP([]byte("From UDP server!\n"), addr)
 	}
 }
 
-func readUDP(conn net.Conn, buffer []byte, n int) {
+func readUDP(buffer []byte, n int) {
 	msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
 	switch msg.PayloadType() {
 	case protocol.PayloadMovement:

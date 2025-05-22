@@ -70,11 +70,11 @@ func (p *PlayerBox) Serialize() ([]byte, error) {
 	builder := flatbuffers.NewBuilder(1024)
 
 	id := builder.CreateString(p.id)
-	position := protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z)
+	// position := protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z)
 
 	protocol.PlayerBoxStart(builder)
 	protocol.PlayerBoxAddId(builder, id)
-	protocol.PlayerBoxAddPosition(builder, position)
+	protocol.PlayerBoxAddPosition(builder, protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z))
 	playerBox := protocol.PlayerBoxEnd(builder)
 
 	protocol.NetworkMessageStart(builder)
