@@ -9,16 +9,22 @@ type Payload byte
 const (
 	PayloadNONE              Payload = 0
 	PayloadConnectionRequest Payload = 1
+	PayloadPlayerBox         Payload = 2
+	PayloadMovement          Payload = 3
 )
 
 var EnumNamesPayload = map[Payload]string{
 	PayloadNONE:              "NONE",
 	PayloadConnectionRequest: "ConnectionRequest",
+	PayloadPlayerBox:         "PlayerBox",
+	PayloadMovement:          "Movement",
 }
 
 var EnumValuesPayload = map[string]Payload{
 	"NONE":              PayloadNONE,
 	"ConnectionRequest": PayloadConnectionRequest,
+	"PlayerBox":         PayloadPlayerBox,
+	"Movement":          PayloadMovement,
 }
 
 func (v Payload) String() string {

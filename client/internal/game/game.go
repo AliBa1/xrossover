@@ -41,7 +41,7 @@ func (g *Game) initialize() {
 		Projection: rl.CameraPerspective,
 	}
 	// g.cubePosition = rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0}
-	g.box = NewPlayerBox()
+	g.box = NewPlayerBox(g.Username)
 
 	rl.SetTargetFPS(60)
 }
@@ -96,21 +96,35 @@ func (g *Game) processInput() {
 	if rl.IsKeyDown(rl.KeyW) {
 		// g.cubePosition.Z -= 0.05
 		g.box.Move(0.0, 0.0, -0.05)
+		g.sendMovement(0.0, 0.0, -0.05)
 	} else if rl.IsKeyDown(rl.KeyS) {
 		// g.cubePosition.Z += 0.05
 		g.box.Move(0.0, 0.0, 0.05)
+		g.sendMovement(0.0, 0.0, 0.05)
 	} else if rl.IsKeyDown(rl.KeyA) {
 		// g.cubePosition.X -= 0.05
 		g.box.Move(-0.05, 0.0, 0.0)
+		g.sendMovement(-0.05, 0.0, 0.0)
 	} else if rl.IsKeyDown(rl.KeyD) {
 		// g.cubePosition.X += 0.05
 		g.box.Move(0.05, 0.0, 0.0)
+		g.sendMovement(0.05, 0.0, 0.0)
 	}
 
 	// connect to server
 	if rl.IsKeyPressed(rl.KeyC) && g.tcpConn == nil {
 		g.connectToTCP()
 		g.connectToUDP()
+	}
+}
+
+func (g *Game) sendMovement(x float32, y float32, z float32) {
+	if g.udpConn != nil {
+		data, err := g.box.SerializeMove(x, y, z)
+		if err != nil {
+			log.Println("Error serializing movement data:", err)
+		}
+		g.sendUDP(data)
 	}
 }
 
@@ -135,6 +149,13 @@ func (g *Game) connectToTCP() {
 		log.Println("Error writing to server via TCP:", err)
 		return
 	}
+
+	data, err = g.box.Serialize()
+	_, err = g.tcpConn.Write(data)
+	if err != nil {
+		log.Println("Error sending player box:", err)
+		return
+	}
 }
 
 func (g *Game) connectToUDP() {
@@ -147,7 +168,16 @@ func (g *Game) connectToUDP() {
 		return
 	}
 
-	_, err = g.udpConn.Write([]byte("This is " + g.Username + " via UDP"))
+	g.sendUDP([]byte("This is " + g.Username + " via UDP"))
+	// _, err = g.udpConn.Write([]byte("This is " + g.Username + " via UDP"))
+	// if err != nil {
+	// 	log.Println("Error writing to server via UDP:", err)
+	// 	return
+	// }
+}
+
+func (g *Game) sendUDP(data []byte) {
+	_, err := g.udpConn.Write(data)
 	if err != nil {
 		log.Println("Error writing to server via UDP:", err)
 		return

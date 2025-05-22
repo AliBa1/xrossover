@@ -1,0 +1,39 @@
+namespace xrossover;
+
+table ConnectionRequest {
+	username: string;
+	udpaddr: string;
+}
+
+struct Vector3 {
+	x: float;
+	y: float;
+	z: float;
+}
+
+table PlayerBox {
+	id: string;
+	position: Vector3;
+}
+
+table Movement {
+	object_id: string;
+	direction: Vector3;
+}
+
+table GameWorld {
+	objects: [PlayerBox];
+}
+
+union Payload {
+	ConnectionRequest,
+	// GameWorld,
+	PlayerBox,
+	Movement
+}
+
+table NetworkMessage {
+	payload: Payload;
+}
+
+root_type NetworkMessage;

@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 	protocol "xrossover-server/flatbuffers/xrossover"
+	"xrossover-server/internal/game"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -17,8 +18,9 @@ const (
 )
 
 var (
-	clients      = map[string]*Client{}
-	clientsMutex sync.Mutex
+	clients        = map[string]*Client{}
+	clientsMutex   sync.Mutex
+	objectRegistry = game.NewObjectRegistry()
 )
 
 type Client struct {
@@ -91,6 +93,19 @@ func readTCP(conn net.Conn, buffer []byte, n int) {
 			udpStr := string(connReq.Udpaddr())
 			addClient(username, conn, udpStr)
 		}
+	case protocol.PayloadPlayerBox:
+		log.Println("recieved a player box")
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			fbPosition := new(protocol.Vector3)
+			fbBox := new(protocol.PlayerBox)
+			fbBox.Init(table.Bytes, table.Pos)
+			// add box to object registry
+			id := string(fbBox.Id())
+			position := fbBox.Position(fbPosition)
+			playerBox := game.NewPlayerBox(id, *position)
+			objectRegistry.Add(playerBox)
+		}
 	default:
 		log.Println("Received without type:", msg.PayloadType())
 	}
@@ -146,6 +161,31 @@ func handleUDPConnection(conn *net.UDPConn) {
 		}
 
 		log.Println("Recieved:", string(buffer[:n]))
+		readUDP(conn, buffer, n)
 		// conn.WriteToUDP([]byte("From UDP server!\n"), addr)
+	}
+}
+
+func readUDP(conn net.Conn, buffer []byte, n int) {
+	msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
+	switch msg.PayloadType() {
+	case protocol.PayloadMovement:
+		log.Println("recieved movement data")
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			fbDirection := new(protocol.Vector3)
+			fbMovement := new(protocol.Movement)
+			fbMovement.Init(table.Bytes, table.Pos)
+			id := string(fbMovement.ObjectId())
+			direction := fbMovement.Direction(fbDirection)
+			obj, err := objectRegistry.Get(id)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			obj.Move(direction.X(), direction.Y(), direction.Z())
+		}
+	default:
+		log.Println("Received without type:", msg.PayloadType())
 	}
 }
