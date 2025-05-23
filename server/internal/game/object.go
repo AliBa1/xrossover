@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -14,32 +15,35 @@ type GameObject interface {
 
 type ObjectRegistry struct {
 	sync.RWMutex
-	objects map[string]GameObject
+	Objects map[string]GameObject
 }
 
 func NewObjectRegistry() *ObjectRegistry {
 	return &ObjectRegistry{
-		objects: make(map[string]GameObject),
+		Objects: make(map[string]GameObject),
 	}
 }
 
 func (o *ObjectRegistry) Add(obj GameObject) {
 	o.Lock()
 	defer o.Unlock()
-	o.objects[obj.ID()] = obj
+	fmt.Println("Object to add:", obj)
+	fmt.Println("Obj ID", obj.ID())
+	o.Objects[obj.ID()] = obj
+	fmt.Println("Objs after addition:", o.Objects)
 }
 
 func (o *ObjectRegistry) Remove(id string) {
 	o.Lock()
 	defer o.Unlock()
-	delete(o.objects, id)
+	delete(o.Objects, id)
 }
 
 func (o *ObjectRegistry) Get(id string) (GameObject, error) {
 	o.RLock()
 	defer o.RUnlock()
-	obj, ok := o.objects[id]
-	if ok != false {
+	obj, ok := o.Objects[id]
+	if ok != true {
 		return nil, errors.New("unable to find object (" + id + ")")
 	}
 	return obj, nil

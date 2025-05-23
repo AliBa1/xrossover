@@ -39,34 +39,7 @@ func (p *PlayerBox) Position() rl.Vector3 {
 
 // func (p *PlayerBox) Update()
 
-func (p *PlayerBox) Move(x float32, y float32, z float32) {
-	p.position.X += x
-	p.position.Y += y
-	p.position.Z += z
-}
-
-func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) ([]byte, error) {
-	builder := flatbuffers.NewBuilder(1024)
-
-	id := builder.CreateString(p.id)
-	direction := protocol.CreateVector3(builder, x, y, z)
-
-	protocol.MovementStart(builder)
-	protocol.MovementAddObjectId(builder, id)
-	protocol.MovementAddDirection(builder, direction)
-	movement := protocol.MovementEnd(builder)
-
-	protocol.NetworkMessageStart(builder)
-	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadMovement)
-	protocol.NetworkMessageAddPayload(builder, movement)
-	netMsg := protocol.NetworkMessageEnd(builder)
-
-	builder.Finish(netMsg)
-
-	return builder.FinishedBytes(), nil
-}
-
-func (p *PlayerBox) Serialize() ([]byte, error) {
+func (p *PlayerBox) Serialize() []byte {
 	builder := flatbuffers.NewBuilder(1024)
 
 	id := builder.CreateString(p.id)
@@ -84,5 +57,32 @@ func (p *PlayerBox) Serialize() ([]byte, error) {
 
 	builder.Finish(netMsg)
 
-	return builder.FinishedBytes(), nil
+	return builder.FinishedBytes()
+}
+
+func (p *PlayerBox) Move(x float32, y float32, z float32) {
+	p.position.X += x
+	p.position.Y += y
+	p.position.Z += z
+}
+
+func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) []byte {
+	builder := flatbuffers.NewBuilder(1024)
+
+	id := builder.CreateString(p.id)
+	// direction := protocol.CreateVector3(builder, x, y, z)
+
+	protocol.MovementStart(builder)
+	protocol.MovementAddObjectId(builder, id)
+	protocol.MovementAddDirection(builder, protocol.CreateVector3(builder, x, y, z))
+	movement := protocol.MovementEnd(builder)
+
+	protocol.NetworkMessageStart(builder)
+	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadMovement)
+	protocol.NetworkMessageAddPayload(builder, movement)
+	netMsg := protocol.NetworkMessageEnd(builder)
+
+	builder.Finish(netMsg)
+
+	return builder.FinishedBytes()
 }

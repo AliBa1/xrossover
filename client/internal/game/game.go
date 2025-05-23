@@ -1,11 +1,13 @@
 package game
 
 import (
+	"encoding/binary"
+	"errors"
+	rl "github.com/gen2brain/raylib-go/raylib"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"log"
 	"net"
-	"xrossover-client/internal/buffer"
-
-	rl "github.com/gen2brain/raylib-go/raylib"
+	protocol "xrossover-client/flatbuffers/xrossover"
 )
 
 const (
@@ -120,12 +122,29 @@ func (g *Game) processInput() {
 
 func (g *Game) sendMovement(x float32, y float32, z float32) {
 	if g.udpConn != nil {
-		data, err := g.box.SerializeMove(x, y, z)
-		if err != nil {
-			log.Println("Error serializing movement data:", err)
-		}
-		g.sendUDP(data)
+		g.sendMessage("udp", g.box.SerializeMove(x, y, z))
 	}
+}
+
+func (g *Game) serializeConnectionRequest(udpAddr *net.UDPAddr) []byte {
+	builder := flatbuffers.NewBuilder(1024)
+
+	user := builder.CreateString(g.Username)
+	udp := builder.CreateString(udpAddr.String())
+
+	protocol.ConnectionRequestStart(builder)
+	protocol.ConnectionRequestAddUsername(builder, user)
+	protocol.ConnectionRequestAddUdpaddr(builder, udp)
+	connReq := protocol.ConnectionRequestEnd(builder)
+
+	protocol.NetworkMessageStart(builder)
+	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadConnectionRequest)
+	protocol.NetworkMessageAddPayload(builder, connReq)
+	netMsg := protocol.NetworkMessageEnd(builder)
+
+	builder.Finish(netMsg)
+
+	return builder.FinishedBytes()
 }
 
 func (g *Game) connectToTCP() {
@@ -143,15 +162,14 @@ func (g *Game) connectToTCP() {
 		log.Println("Failed to get UDP address:", err)
 	}
 
-	data := buffer.SerializeConnectionRequest(g.Username, udpAddr)
-	_, err = g.tcpConn.Write(data)
+	// err = g.sendMessage("tcp", serialize.ConnectionRequest(g.Username, udpAddr))
+	err = g.sendMessage("tcp", g.serializeConnectionRequest(udpAddr))
 	if err != nil {
-		log.Println("Error writing to server via TCP:", err)
+		log.Println("Error sending player box:", err)
 		return
 	}
 
-	data, err = g.box.Serialize()
-	_, err = g.tcpConn.Write(data)
+	err = g.sendMessage("tcp", g.box.Serialize())
 	if err != nil {
 		log.Println("Error sending player box:", err)
 		return
@@ -167,19 +185,33 @@ func (g *Game) connectToUDP() {
 		log.Println("Error connecting to server via UDP:", err)
 		return
 	}
-
-	g.sendUDP([]byte("This is " + g.Username + " via UDP"))
-	// _, err = g.udpConn.Write([]byte("This is " + g.Username + " via UDP"))
-	// if err != nil {
-	// 	log.Println("Error writing to server via UDP:", err)
-	// 	return
-	// }
 }
 
-func (g *Game) sendUDP(data []byte) {
-	_, err := g.udpConn.Write(data)
-	if err != nil {
-		log.Println("Error writing to server via UDP:", err)
-		return
+func (g *Game) sendMessage(protocol string, data []byte) error {
+	if protocol != "tcp" && protocol != "udp" {
+		return errors.New("attempted to send message with an unsupported protocol")
 	}
+
+	length := uint32(len(data))
+	var lengthPrefix [4]byte
+	binary.BigEndian.PutUint32(lengthPrefix[:], length)
+
+	var conn net.Conn
+	if protocol == "tcp" {
+		conn = g.tcpConn
+	} else {
+		conn = g.tcpConn
+	}
+
+	_, err := conn.Write(lengthPrefix[:])
+	if err != nil {
+		return errors.New("error sending buffer length prefix to server")
+	}
+
+	_, err = conn.Write(data)
+	if err != nil {
+		return errors.New("error sending data to server")
+	}
+
+	return nil
 }

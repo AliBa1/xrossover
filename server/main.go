@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -52,17 +53,45 @@ func startTCP() {
 			log.Println("Error:", err)
 			continue
 		}
-		go handleTCPConnection(conn)
+		go handleConnection(conn)
 	}
 }
 
-func handleTCPConnection(conn net.Conn) {
+func startUDP() {
+	addr, err := net.ResolveUDPAddr("udp", ":"+UDPPort)
+	if err != nil {
+		log.Fatalln("Error:", err)
+	}
+
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		log.Fatalln("Error:", err)
+	}
+
+	fmt.Println("Listening UDP on port", UDPPort)
+
+	go handleConnection(conn)
+}
+
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	buffer := make([]byte, 1024)
-
 	for {
-		n, err := conn.Read(buffer)
+		lengthPrefix := make([]byte, 4)
+		// _, err := io.ReadFull(conn, lengthPrefix)
+		_, err := conn.Read(lengthPrefix)
+		if err != nil {
+			log.Println("Failed to read message length:", err)
+			break
+		}
+		dataLen := binary.BigEndian.Uint32(lengthPrefix)
+		if dataLen > 10_000 {
+			log.Println("Message too large")
+			break
+		}
+
+		data := make([]byte, dataLen)
+		_, err = conn.Read(data)
 		if err != nil {
 			if err == io.EOF {
 				log.Println("Client Disconnected")
@@ -76,12 +105,14 @@ func handleTCPConnection(conn net.Conn) {
 			break
 		}
 
-		readTCP(conn, buffer, n)
+		readData(conn, data, int(dataLen))
 	}
 }
 
-func readTCP(conn net.Conn, buffer []byte, n int) {
-	msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
+func readData(conn net.Conn, data []byte, n int) {
+	// fmt.Println("N:", n)
+	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
+	// fmt.Println("Msg Type:", msg.PayloadType())
 	switch msg.PayloadType() {
 	case protocol.PayloadConnectionRequest:
 		log.Println("adding to clients")
@@ -106,9 +137,29 @@ func readTCP(conn net.Conn, buffer []byte, n int) {
 			playerBox := game.NewPlayerBox(id, *position)
 			objectRegistry.Add(playerBox)
 		}
+	case protocol.PayloadMovement:
+		log.Println("recieved movement data")
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			fbDirection := new(protocol.Vector3)
+			fbMovement := new(protocol.Movement)
+			fbMovement.Init(table.Bytes, table.Pos)
+			id := string(fbMovement.ObjectId())
+			direction := fbMovement.Direction(fbDirection)
+			obj, err := objectRegistry.Get(id)
+			if err != nil {
+				log.Println(err)
+				log.Println("Object Registry:", objectRegistry.Objects)
+				return
+			}
+			fmt.Println("Direction:", direction)
+			fmt.Println("Object:", obj)
+			obj.Move(direction.X(), direction.Y(), direction.Z())
+		}
 	default:
 		log.Println("Received without type:", msg.PayloadType())
 	}
+
 }
 
 func addClient(username string, conn net.Conn, udpStr string) {
@@ -131,61 +182,4 @@ func addClient(username string, conn net.Conn, udpStr string) {
 	}
 	clientsMutex.Unlock()
 	log.Println(username, "added to clients")
-}
-
-func startUDP() {
-	addr, err := net.ResolveUDPAddr("udp", ":"+UDPPort)
-	if err != nil {
-		log.Fatalln("Error:", err)
-	}
-
-	conn, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		log.Fatalln("Error:", err)
-	}
-
-	fmt.Println("Listening UDP on port", UDPPort)
-
-	go handleUDPConnection(conn)
-}
-
-func handleUDPConnection(conn *net.UDPConn) {
-	defer conn.Close()
-
-	buffer := make([]byte, 1024)
-
-	for {
-		n, _, err := conn.ReadFromUDP(buffer)
-		if err != nil {
-			log.Println("Error:", err)
-		}
-
-		log.Println("Recieved:", string(buffer[:n]))
-		readUDP(buffer, n)
-		// conn.WriteToUDP([]byte("From UDP server!\n"), addr)
-	}
-}
-
-func readUDP(buffer []byte, n int) {
-	msg := protocol.GetRootAsNetworkMessage(buffer[:n], 0)
-	switch msg.PayloadType() {
-	case protocol.PayloadMovement:
-		log.Println("recieved movement data")
-		table := new(flatbuffers.Table)
-		if msg.Payload(table) {
-			fbDirection := new(protocol.Vector3)
-			fbMovement := new(protocol.Movement)
-			fbMovement.Init(table.Bytes, table.Pos)
-			id := string(fbMovement.ObjectId())
-			direction := fbMovement.Direction(fbDirection)
-			obj, err := objectRegistry.Get(id)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			obj.Move(direction.X(), direction.Y(), direction.Z())
-		}
-	default:
-		log.Println("Received without type:", msg.PayloadType())
-	}
 }
