@@ -109,6 +109,29 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
+func broadcast(protocol string, data []byte) {
+	if protocol != "tcp" && protocol != "udp" {
+		log.Println("Must broadcast message using TCP or UDP")
+		return
+	}
+	clientsMutex.Lock()
+	for _, c := range clients {
+		switch protocol {
+		case "tcp":
+			sendMessage(c.tcpConn, data)
+		case "udp":
+			conn, err := net.DialUDP("udp", nil, c.udpAddr)
+			if err != nil {
+				log.Println("Error broadcasting UDP message:", err)
+			} else {
+				sendMessage(conn, data)
+			}
+
+		}
+	}
+	clientsMutex.Unlock()
+}
+
 func readData(conn net.Conn, data []byte, n int) {
 	// fmt.Println("N:", n)
 	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
@@ -138,13 +161,7 @@ func readData(conn net.Conn, data []byte, n int) {
 			objectRegistry.Add(playerBox)
 
 			log.Println("Current object registry:", objectRegistry.Objects)
-			clientsMutex.Lock()
-			for _, c := range clients {
-				sendMessage(c.tcpConn, objectRegistry.Serialize())
-			}
-			clientsMutex.Unlock()
-			// sendMessage(conn, objectRegistry.Serialize())
-
+			broadcast("tcp", objectRegistry.Serialize())
 		}
 	case protocol.PayloadMovement:
 		log.Println("recieved movement data")
