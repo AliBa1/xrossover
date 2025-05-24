@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,8 +28,7 @@ var (
 type Client struct {
 	Username string
 	tcpConn  net.Conn
-	// udpConn net.UDPConn
-	udpAddr *net.UDPAddr
+	udpAddr  *net.UDPAddr
 }
 
 func main() {
@@ -136,6 +136,15 @@ func readData(conn net.Conn, data []byte, n int) {
 			position := fbBox.Position(fbPosition)
 			playerBox := game.NewPlayerBox(id, *position)
 			objectRegistry.Add(playerBox)
+
+			log.Println("Current object registry:", objectRegistry.Objects)
+			clientsMutex.Lock()
+			for _, c := range clients {
+				sendMessage(c.tcpConn, objectRegistry.Serialize())
+			}
+			clientsMutex.Unlock()
+			// sendMessage(conn, objectRegistry.Serialize())
+
 		}
 	case protocol.PayloadMovement:
 		log.Println("recieved movement data")
@@ -182,4 +191,22 @@ func addClient(username string, conn net.Conn, udpStr string) {
 	}
 	clientsMutex.Unlock()
 	log.Println(username, "added to clients")
+}
+
+func sendMessage(conn net.Conn, data []byte) error {
+	length := uint32(len(data))
+	var lengthPrefix [4]byte
+	binary.BigEndian.PutUint32(lengthPrefix[:], length)
+
+	_, err := conn.Write(lengthPrefix[:])
+	if err != nil {
+		return errors.New("error sending buffer length prefix to server")
+	}
+
+	_, err = conn.Write(data)
+	if err != nil {
+		return errors.New("error sending data to server")
+	}
+
+	return nil
 }

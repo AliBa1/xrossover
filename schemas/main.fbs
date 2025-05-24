@@ -21,13 +21,19 @@ table Movement {
 	direction: Vector3;
 }
 
-table GameWorld {
-	objects: [PlayerBox];
+union GameObjectUnion { PlayerBox }
+
+table GameObjectWrapper {
+	object: GameObjectUnion;
+}
+
+table ObjectRegistry {
+	objects: [GameObjectWrapper];
 }
 
 union Payload {
 	ConnectionRequest,
-	// GameWorld,
+	ObjectRegistry,
 	PlayerBox,
 	Movement
 }

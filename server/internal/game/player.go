@@ -31,9 +31,9 @@ func (p *PlayerBox) ID() string {
 	return p.id
 }
 
-// func (p *PlayerBox) Position() rl.Vector3 {
-// 	return p.position
-// }
+func (p *PlayerBox) Position() rl.Vector3 {
+	return p.position
+}
 
 // func (p *PlayerBox) Update()
 
@@ -43,15 +43,14 @@ func (p *PlayerBox) Move(x float32, y float32, z float32) {
 	p.position.Z += z
 }
 
-func (p *PlayerBox) Serialize() ([]byte, error) {
+func (p *PlayerBox) Serialize() []byte {
 	builder := flatbuffers.NewBuilder(1024)
 
 	id := builder.CreateString(p.id)
-	position := protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z)
 
 	protocol.PlayerBoxStart(builder)
 	protocol.PlayerBoxAddId(builder, id)
-	protocol.PlayerBoxAddPosition(builder, position)
+	protocol.PlayerBoxAddPosition(builder, protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z))
 	playerBox := protocol.PlayerBoxEnd(builder)
 
 	protocol.NetworkMessageStart(builder)
@@ -61,5 +60,5 @@ func (p *PlayerBox) Serialize() ([]byte, error) {
 
 	builder.Finish(netMsg)
 
-	return builder.FinishedBytes(), nil
+	return builder.FinishedBytes()
 }

@@ -9,13 +9,15 @@ type Payload byte
 const (
 	PayloadNONE              Payload = 0
 	PayloadConnectionRequest Payload = 1
-	PayloadPlayerBox         Payload = 2
-	PayloadMovement          Payload = 3
+	PayloadObjectRegistry    Payload = 2
+	PayloadPlayerBox         Payload = 3
+	PayloadMovement          Payload = 4
 )
 
 var EnumNamesPayload = map[Payload]string{
 	PayloadNONE:              "NONE",
 	PayloadConnectionRequest: "ConnectionRequest",
+	PayloadObjectRegistry:    "ObjectRegistry",
 	PayloadPlayerBox:         "PlayerBox",
 	PayloadMovement:          "Movement",
 }
@@ -23,6 +25,7 @@ var EnumNamesPayload = map[Payload]string{
 var EnumValuesPayload = map[string]Payload{
 	"NONE":              PayloadNONE,
 	"ConnectionRequest": PayloadConnectionRequest,
+	"ObjectRegistry":    PayloadObjectRegistry,
 	"PlayerBox":         PayloadPlayerBox,
 	"Movement":          PayloadMovement,
 }

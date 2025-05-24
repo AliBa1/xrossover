@@ -3,8 +3,9 @@ package game
 import (
 	"image/color"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
 	protocol "xrossover-client/flatbuffers/xrossover"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -29,6 +30,17 @@ func NewPlayerBox(id string) *PlayerBox {
 	}
 }
 
+func NewFBPlayerBox(id string, pos protocol.Vector3) *PlayerBox {
+	return &PlayerBox{
+		id:       id,
+		position: rl.Vector3{X: pos.X(), Y: pos.Y(), Z: pos.Z()},
+		width:    1.0,
+		height:   1.0,
+		length:   1.0,
+		color:    rl.Red,
+	}
+}
+
 func (p *PlayerBox) ID() string {
 	return p.id
 }
@@ -37,13 +49,30 @@ func (p *PlayerBox) Position() rl.Vector3 {
 	return p.position
 }
 
+func (p *PlayerBox) Dimensions() Dimensions {
+	return Dimensions{
+		Width:  p.width,
+		Height: p.height,
+		Length: p.length,
+	}
+}
+
+func (p *PlayerBox) Color() color.RGBA {
+	return p.color
+}
+
 // func (p *PlayerBox) Update()
+
+func (p *PlayerBox) Move(x float32, y float32, z float32) {
+	p.position.X += x
+	p.position.Y += y
+	p.position.Z += z
+}
 
 func (p *PlayerBox) Serialize() []byte {
 	builder := flatbuffers.NewBuilder(1024)
 
 	id := builder.CreateString(p.id)
-	// position := protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z)
 
 	protocol.PlayerBoxStart(builder)
 	protocol.PlayerBoxAddId(builder, id)
@@ -60,17 +89,10 @@ func (p *PlayerBox) Serialize() []byte {
 	return builder.FinishedBytes()
 }
 
-func (p *PlayerBox) Move(x float32, y float32, z float32) {
-	p.position.X += x
-	p.position.Y += y
-	p.position.Z += z
-}
-
 func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) []byte {
 	builder := flatbuffers.NewBuilder(1024)
 
 	id := builder.CreateString(p.id)
-	// direction := protocol.CreateVector3(builder, x, y, z)
 
 	protocol.MovementStart(builder)
 	protocol.MovementAddObjectId(builder, id)

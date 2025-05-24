@@ -3,11 +3,13 @@ package game
 import (
 	"encoding/binary"
 	"errors"
-	rl "github.com/gen2brain/raylib-go/raylib"
-	flatbuffers "github.com/google/flatbuffers/go"
+	"io"
 	"log"
 	"net"
 	protocol "xrossover-client/flatbuffers/xrossover"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 const (
@@ -19,12 +21,12 @@ const (
 )
 
 type Game struct {
-	Username string
-	camera   rl.Camera3D
-	box      *PlayerBox
-	// cubePosition rl.Vector3
-	tcpConn net.Conn
-	udpConn net.Conn
+	Username       string
+	camera         rl.Camera3D
+	box            *PlayerBox
+	tcpConn        net.Conn
+	udpConn        net.Conn
+	objectRegistry *ObjectRegistry
 }
 
 func (g *Game) Run() {
@@ -34,6 +36,7 @@ func (g *Game) Run() {
 }
 
 func (g *Game) initialize() {
+	g.objectRegistry = NewObjectRegistry()
 	rl.InitWindow(WIDTH, HEIGHT, "Game Window")
 	g.camera = rl.Camera3D{
 		Position:   rl.Vector3{X: 0.0, Y: 10.0, Z: 10.0},
@@ -42,8 +45,8 @@ func (g *Game) initialize() {
 		Fovy:       45.0,
 		Projection: rl.CameraPerspective,
 	}
-	// g.cubePosition = rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0}
 	g.box = NewPlayerBox(g.Username)
+	g.objectRegistry.Add(g.box)
 
 	rl.SetTargetFPS(60)
 }
@@ -53,6 +56,12 @@ func (g *Game) loop() {
 		g.processInput()
 		rl.BeginDrawing()
 		g.updateDrawing()
+		if g.tcpConn != nil {
+			go g.handleConnection(g.tcpConn)
+		}
+		if g.udpConn != nil {
+			go g.handleConnection(g.udpConn)
+		}
 		rl.EndDrawing()
 	}
 
@@ -87,9 +96,10 @@ func (g *Game) updateDrawing() {
 }
 
 func (g *Game) update3DOutput() {
-	// rl.DrawCube(g.cubePosition, 1.0, 1.0, 1.0, rl.Red)
-	rl.DrawCube(g.box.position, g.box.width, g.box.height, g.box.length, g.box.color)
-	rl.DrawCubeWires(g.box.position, 1.0, 1.0, 1.0, rl.Maroon)
+	for _, obj := range g.objectRegistry.Objects {
+		rl.DrawCube(obj.Position(), obj.Dimensions().Width, obj.Dimensions().Height, obj.Dimensions().Length, obj.Color())
+		rl.DrawCubeWires(obj.Position(), 1.0, 1.0, 1.0, rl.Maroon)
+	}
 	rl.DrawGrid(10, 1.0)
 }
 
@@ -214,4 +224,75 @@ func (g *Game) sendMessage(protocol string, data []byte) error {
 	}
 
 	return nil
+}
+
+func (g *Game) handleConnection(conn net.Conn) {
+	defer conn.Close()
+
+	for {
+		lengthPrefix := make([]byte, 4)
+		_, err := conn.Read(lengthPrefix)
+		if err != nil {
+			log.Println("Failed to read message length:", err)
+			break
+		}
+		dataLen := binary.BigEndian.Uint32(lengthPrefix)
+		if dataLen > 10_000 {
+			log.Println("Message too large")
+			break
+		}
+
+		data := make([]byte, dataLen)
+		_, err = conn.Read(data)
+		if err != nil {
+			if err == io.EOF {
+				log.Println("Client Disconnected")
+			} else {
+				log.Println("Error erere:", err)
+			}
+
+			// clientsMutex.Lock()
+			// delete(clients, c.ID)
+			// clientsMutex.Unlock()
+			break
+		}
+
+		g.readData(conn, data, int(dataLen))
+	}
+}
+
+func (g *Game) readData(conn net.Conn, data []byte, n int) {
+	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
+	switch msg.PayloadType() {
+	case protocol.PayloadObjectRegistry:
+		log.Println("recieved object registry from server")
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			objectRegistry := new(protocol.ObjectRegistry)
+			objectRegistry.Init(table.Bytes, table.Pos)
+
+			for i := 0; i < objectRegistry.ObjectsLength(); i++ {
+				var objectWrapper protocol.GameObjectWrapper
+				if objectRegistry.Objects(&objectWrapper, i) {
+					objectUnionTable := new(flatbuffers.Table)
+					if objectWrapper.Object(objectUnionTable) {
+						switch objectWrapper.ObjectType() {
+						case protocol.GameObjectUnionPlayerBox:
+							fbPosition := new(protocol.Vector3)
+							fbBox := new(protocol.PlayerBox)
+							fbBox.Init(objectUnionTable.Bytes, objectUnionTable.Pos)
+
+							id := string(fbBox.Id())
+							position := fbBox.Position(fbPosition)
+							playerBox := NewFBPlayerBox(id, *position)
+							g.objectRegistry.Add(playerBox)
+							log.Println(g.Username, "Added box with ID to client registry:", id)
+						}
+					}
+				}
+			}
+		}
+	default:
+		log.Println("Received without type:", msg.PayloadType())
+	}
 }
