@@ -86,6 +86,11 @@ func (g *Game) updateDrawing() {
 	g.update3DOutput()
 	rl.EndMode3D()
 
+	for _, obj := range g.objectRegistry.Objects {
+		objScreenPosition := rl.GetWorldToScreen(rl.Vector3{X: obj.Position().X, Y: obj.Position().Y + 1.5, Z: obj.Position().Z}, g.camera)
+		rl.DrawText(obj.ID(), int32(objScreenPosition.X)-rl.MeasureText(obj.ID(), 20)/2, int32(objScreenPosition.Y), 20, rl.Black)
+	}
+
 	if g.tcpConn != nil && g.udpConn != nil {
 		rl.DrawText("Connected to Server", WIDTH-rl.MeasureText("Connected to Server", 20)-10, 20, 20, rl.Black)
 	} else {
