@@ -49,8 +49,16 @@ func (rcv *PlayerBox) Id() []byte {
 	return nil
 }
 
-func (rcv *PlayerBox) Position(obj *Vector3) *Vector3 {
+func (rcv *PlayerBox) Owner() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+func (rcv *PlayerBox) Position(obj *Vector3) *Vector3 {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		x := o + rcv._tab.Pos
 		if obj == nil {
@@ -63,13 +71,16 @@ func (rcv *PlayerBox) Position(obj *Vector3) *Vector3 {
 }
 
 func PlayerBoxStart(builder *flatbuffers.Builder) {
-	builder.StartObject(2)
+	builder.StartObject(3)
 }
 func PlayerBoxAddId(builder *flatbuffers.Builder, id flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(id), 0)
 }
+func PlayerBoxAddOwner(builder *flatbuffers.Builder, owner flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(owner), 0)
+}
 func PlayerBoxAddPosition(builder *flatbuffers.Builder, position flatbuffers.UOffsetT) {
-	builder.PrependStructSlot(1, flatbuffers.UOffsetT(position), 0)
+	builder.PrependStructSlot(2, flatbuffers.UOffsetT(position), 0)
 }
 func PlayerBoxEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

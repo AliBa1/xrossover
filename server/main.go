@@ -78,7 +78,6 @@ func handleConnection(conn net.Conn) {
 
 	for {
 		lengthPrefix := make([]byte, 4)
-		// _, err := io.ReadFull(conn, lengthPrefix)
 		_, err := conn.Read(lengthPrefix)
 		if err != nil {
 			log.Println("Failed to read message length:", err)
@@ -109,33 +108,34 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func broadcast(protocol string, data []byte) {
+// TODO: add a username as a param to send to all except a client since they already applied their changes through prediction
+func broadcast(protocol, owner string, data []byte) {
 	if protocol != "tcp" && protocol != "udp" {
 		log.Println("Must broadcast message using TCP or UDP")
 		return
 	}
 	clientsMutex.Lock()
 	for _, c := range clients {
-		switch protocol {
-		case "tcp":
-			sendMessage(c.tcpConn, data)
-		case "udp":
-			conn, err := net.DialUDP("udp", nil, c.udpAddr)
-			if err != nil {
-				log.Println("Error broadcasting UDP message:", err)
-			} else {
-				sendMessage(conn, data)
-			}
+		if c.Username != owner {
+			switch protocol {
+			case "tcp":
+				sendMessage(c.tcpConn, data)
+			case "udp":
+				conn, err := net.DialUDP("udp", nil, c.udpAddr)
+				if err != nil {
+					log.Println("Error broadcasting UDP message:", err)
+				} else {
+					sendMessage(conn, data)
+				}
 
+			}
 		}
 	}
 	clientsMutex.Unlock()
 }
 
 func readData(conn net.Conn, data []byte, n int) {
-	// fmt.Println("N:", n)
 	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
-	// fmt.Println("Msg Type:", msg.PayloadType())
 	switch msg.PayloadType() {
 	case protocol.PayloadConnectionRequest:
 		log.Println("adding to clients")
@@ -156,31 +156,32 @@ func readData(conn net.Conn, data []byte, n int) {
 			fbBox.Init(table.Bytes, table.Pos)
 			// add box to object registry
 			id := string(fbBox.Id())
+			owner := string(fbBox.Owner())
 			position := fbBox.Position(fbPosition)
-			playerBox := game.NewPlayerBox(id, *position)
+			playerBox := game.NewPlayerBox(id, owner, *position)
 			objectRegistry.Add(playerBox)
 
 			log.Println("Current object registry:", objectRegistry.Objects)
-			broadcast("tcp", objectRegistry.Serialize())
+			broadcast("tcp", "", objectRegistry.Serialize())
 		}
 	case protocol.PayloadMovement:
-		log.Println("recieved movement data")
+		// log.Println("recieved movement data")
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
 			fbDirection := new(protocol.Vector3)
 			fbMovement := new(protocol.Movement)
 			fbMovement.Init(table.Bytes, table.Pos)
 			id := string(fbMovement.ObjectId())
+			owner := string(fbMovement.ObjectOwner())
 			direction := fbMovement.Direction(fbDirection)
 			obj, err := objectRegistry.Get(id)
 			if err != nil {
 				log.Println(err)
-				log.Println("Object Registry:", objectRegistry.Objects)
 				return
 			}
-			fmt.Println("Direction:", direction)
-			fmt.Println("Object:", obj)
 			obj.Move(direction.X(), direction.Y(), direction.Z())
+			// TODO: change to udp and fix for udp
+			broadcast("tcp", owner, obj.Serialize())
 		}
 	default:
 		log.Println("Received without type:", msg.PayloadType())

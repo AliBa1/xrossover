@@ -12,6 +12,7 @@ import (
 
 type GameObject interface {
 	ID() string
+	Owner() string
 	Position() rl.Vector3
 	Move(x float32, y float32, z float32)
 	// Update(dt float32)
@@ -64,9 +65,11 @@ func (o *ObjectRegistry) Serialize() []byte {
 
 	for _, obj := range o.Objects {
 		id := builder.CreateString(obj.ID())
+		owner := builder.CreateString(obj.Owner())
 
 		protocol.PlayerBoxStart(builder)
 		protocol.PlayerBoxAddId(builder, id)
+		protocol.PlayerBoxAddOwner(builder, owner)
 		protocol.PlayerBoxAddPosition(builder, protocol.CreateVector3(builder, obj.Position().X, obj.Position().Y, obj.Position().Z))
 		playerBox := protocol.PlayerBoxEnd(builder)
 

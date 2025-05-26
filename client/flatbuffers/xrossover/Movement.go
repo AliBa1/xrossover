@@ -49,8 +49,16 @@ func (rcv *Movement) ObjectId() []byte {
 	return nil
 }
 
-func (rcv *Movement) Direction(obj *Vector3) *Vector3 {
+func (rcv *Movement) ObjectOwner() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+func (rcv *Movement) Direction(obj *Vector3) *Vector3 {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		x := o + rcv._tab.Pos
 		if obj == nil {
@@ -63,13 +71,16 @@ func (rcv *Movement) Direction(obj *Vector3) *Vector3 {
 }
 
 func MovementStart(builder *flatbuffers.Builder) {
-	builder.StartObject(2)
+	builder.StartObject(3)
 }
 func MovementAddObjectId(builder *flatbuffers.Builder, objectId flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(objectId), 0)
 }
+func MovementAddObjectOwner(builder *flatbuffers.Builder, objectOwner flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(objectOwner), 0)
+}
 func MovementAddDirection(builder *flatbuffers.Builder, direction flatbuffers.UOffsetT) {
-	builder.PrependStructSlot(1, flatbuffers.UOffsetT(direction), 0)
+	builder.PrependStructSlot(2, flatbuffers.UOffsetT(direction), 0)
 }
 func MovementEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

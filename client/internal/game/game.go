@@ -45,7 +45,7 @@ func (g *Game) initialize() {
 		Fovy:       45.0,
 		Projection: rl.CameraPerspective,
 	}
-	g.box = NewPlayerBox(g.Username)
+	g.box = NewPlayerBox(g.Username, g.Username)
 	g.objectRegistry.Add(g.box)
 
 	rl.SetTargetFPS(60)
@@ -111,19 +111,15 @@ func (g *Game) update3DOutput() {
 func (g *Game) processInput() {
 	// move cube
 	if rl.IsKeyDown(rl.KeyW) {
-		// g.cubePosition.Z -= 0.05
 		g.box.Move(0.0, 0.0, -0.05)
 		g.sendMovement(0.0, 0.0, -0.05)
 	} else if rl.IsKeyDown(rl.KeyS) {
-		// g.cubePosition.Z += 0.05
 		g.box.Move(0.0, 0.0, 0.05)
 		g.sendMovement(0.0, 0.0, 0.05)
 	} else if rl.IsKeyDown(rl.KeyA) {
-		// g.cubePosition.X -= 0.05
 		g.box.Move(-0.05, 0.0, 0.0)
 		g.sendMovement(-0.05, 0.0, 0.0)
 	} else if rl.IsKeyDown(rl.KeyD) {
-		// g.cubePosition.X += 0.05
 		g.box.Move(0.05, 0.0, 0.0)
 		g.sendMovement(0.05, 0.0, 0.0)
 	}
@@ -162,6 +158,7 @@ func (g *Game) serializeConnectionRequest(udpAddr *net.UDPAddr) []byte {
 	return builder.FinishedBytes()
 }
 
+// TODO: make testable by returning error if error
 func (g *Game) connectToTCP() {
 	log.Println("Starting TCP connection to server...")
 	var d net.Dialer
@@ -177,7 +174,6 @@ func (g *Game) connectToTCP() {
 		log.Println("Failed to get UDP address:", err)
 	}
 
-	// err = g.sendMessage("tcp", serialize.ConnectionRequest(g.Username, udpAddr))
 	err = g.sendMessage("tcp", g.serializeConnectionRequest(udpAddr))
 	if err != nil {
 		log.Println("Error sending player box:", err)
@@ -191,6 +187,7 @@ func (g *Game) connectToTCP() {
 	}
 }
 
+// TODO: make testable by returning error if error
 func (g *Game) connectToUDP() {
 	log.Println("Starting UDP connection to server...")
 	var d net.Dialer
@@ -288,8 +285,9 @@ func (g *Game) readData(conn net.Conn, data []byte, n int) {
 							fbBox.Init(objectUnionTable.Bytes, objectUnionTable.Pos)
 
 							id := string(fbBox.Id())
+							owner := string(fbBox.Owner())
 							position := fbBox.Position(fbPosition)
-							playerBox := NewFBPlayerBox(id, *position)
+							playerBox := NewFBPlayerBox(id, owner, *position)
 							g.objectRegistry.Add(playerBox)
 							log.Println(g.Username, "Added box with ID to client registry:", id)
 						}
@@ -297,6 +295,22 @@ func (g *Game) readData(conn net.Conn, data []byte, n int) {
 				}
 			}
 		}
+	case protocol.PayloadPlayerBox:
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			fbPosition := new(protocol.Vector3)
+			fbBox := new(protocol.PlayerBox)
+			fbBox.Init(table.Bytes, table.Pos)
+			id := string(fbBox.Id())
+			position := fbBox.Position(fbPosition)
+			// log.Println("Client: recieved box with id", id, "and position", position)
+			obj, err := g.objectRegistry.Get(id)
+			if err != nil {
+				break
+			}
+			obj.UpdatePosition(position.X(), position.Y(), position.Z())
+		}
+
 	default:
 		log.Println("Received without type:", msg.PayloadType())
 	}

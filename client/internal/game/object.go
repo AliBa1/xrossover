@@ -16,7 +16,9 @@ type Dimensions struct {
 
 type GameObject interface {
 	ID() string
+	Owner() string
 	Position() rl.Vector3
+	UpdatePosition(x, y, z float32)
 	Dimensions() Dimensions
 	Color() color.RGBA
 	// Update(dt float32)

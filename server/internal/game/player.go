@@ -9,26 +9,24 @@ import (
 
 type PlayerBox struct {
 	id       string
+	owner    string
 	position rl.Vector3
-	// width    float32
-	// height   float32
-	// length   float32
-	// color    color.RGBA
 }
 
-func NewPlayerBox(id string, pos protocol.Vector3) *PlayerBox {
+func NewPlayerBox(id, owner string, pos protocol.Vector3) *PlayerBox {
 	return &PlayerBox{
 		id:       id,
+		owner:    owner,
 		position: rl.Vector3{X: pos.X(), Y: pos.Y(), Z: pos.Z()},
-		// width:    1.0,
-		// height:   1.0,
-		// length:   1.0,
-		// color:    rl.Red,
 	}
 }
 
 func (p *PlayerBox) ID() string {
 	return p.id
+}
+
+func (p *PlayerBox) Owner() string {
+	return p.owner
 }
 
 func (p *PlayerBox) Position() rl.Vector3 {
@@ -47,9 +45,11 @@ func (p *PlayerBox) Serialize() []byte {
 	builder := flatbuffers.NewBuilder(1024)
 
 	id := builder.CreateString(p.id)
+	owner := builder.CreateString(p.owner)
 
 	protocol.PlayerBoxStart(builder)
 	protocol.PlayerBoxAddId(builder, id)
+	protocol.PlayerBoxAddOwner(builder, owner)
 	protocol.PlayerBoxAddPosition(builder, protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z))
 	playerBox := protocol.PlayerBoxEnd(builder)
 
