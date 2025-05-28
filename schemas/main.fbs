@@ -23,6 +23,12 @@ table Movement {
 	direction: Vector3;
 }
 
+// table PlayerInput {
+//	username: string;
+//	object_id: string;
+//	input: string;
+//}
+
 union GameObjectUnion { PlayerBox }
 
 table GameObjectWrapper {

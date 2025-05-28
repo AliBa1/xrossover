@@ -20,9 +20,10 @@ const (
 )
 
 var (
-	clients        = map[string]*Client{}
-	clientsMutex   sync.Mutex
-	objectRegistry = game.NewObjectRegistry()
+	clients      = map[string]*Client{}
+	clientsMutex sync.Mutex
+	// objectRegistry = game.NewObjectRegistry()
+	g = game.Game{}
 )
 
 type Client struct {
@@ -35,6 +36,8 @@ func main() {
 	fmt.Println("Welcome to the Game Server!")
 	go startTCP()
 	go startUDP()
+	go g.Run()
+
 	select {}
 }
 
@@ -159,10 +162,10 @@ func readData(conn net.Conn, data []byte, n int) {
 			owner := string(fbBox.Owner())
 			position := fbBox.Position(fbPosition)
 			playerBox := game.NewPlayerBox(id, owner, *position)
-			objectRegistry.Add(playerBox)
+			g.ObjectRegistry.Add(playerBox)
 
-			log.Println("Current object registry:", objectRegistry.Objects)
-			broadcast("tcp", "", objectRegistry.Serialize())
+			log.Println("Current object registry:", g.ObjectRegistry.Objects)
+			broadcast("tcp", "", g.ObjectRegistry.Serialize())
 		}
 	case protocol.PayloadMovement:
 		// log.Println("recieved movement data")
@@ -174,7 +177,7 @@ func readData(conn net.Conn, data []byte, n int) {
 			id := string(fbMovement.ObjectId())
 			owner := string(fbMovement.ObjectOwner())
 			direction := fbMovement.Direction(fbDirection)
-			obj, err := objectRegistry.Get(id)
+			obj, err := g.ObjectRegistry.Get(id)
 			if err != nil {
 				log.Println(err)
 				return
