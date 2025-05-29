@@ -11,7 +11,7 @@ const (
 	PayloadConnectionRequest Payload = 1
 	PayloadObjectRegistry    Payload = 2
 	PayloadPlayerBox         Payload = 3
-	PayloadMovement          Payload = 4
+	PayloadPlayerInput       Payload = 4
 )
 
 var EnumNamesPayload = map[Payload]string{
@@ -19,7 +19,7 @@ var EnumNamesPayload = map[Payload]string{
 	PayloadConnectionRequest: "ConnectionRequest",
 	PayloadObjectRegistry:    "ObjectRegistry",
 	PayloadPlayerBox:         "PlayerBox",
-	PayloadMovement:          "Movement",
+	PayloadPlayerInput:       "PlayerInput",
 }
 
 var EnumValuesPayload = map[string]Payload{
@@ -27,7 +27,7 @@ var EnumValuesPayload = map[string]Payload{
 	"ConnectionRequest": PayloadConnectionRequest,
 	"ObjectRegistry":    PayloadObjectRegistry,
 	"PlayerBox":         PayloadPlayerBox,
-	"Movement":          PayloadMovement,
+	"PlayerInput":       PayloadPlayerInput,
 }
 
 func (v Payload) String() string {

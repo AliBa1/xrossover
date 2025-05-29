@@ -106,22 +106,46 @@ func (p *PlayerBox) Serialize() []byte {
 
 func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) []byte {
 	builder := flatbuffers.NewBuilder(1024)
+	objID := builder.CreateString(p.id)
 
-	id := builder.CreateString(p.id)
-	owner := builder.CreateString(p.owner)
+	protocol.MoveStart(builder)
+	protocol.MoveAddDirection(builder, protocol.CreateVector3(builder, x, y, z))
+	move := protocol.MoveEnd(builder)
 
-	protocol.MovementStart(builder)
-	protocol.MovementAddObjectId(builder, id)
-	protocol.MovementAddObjectOwner(builder, owner)
-	protocol.MovementAddDirection(builder, protocol.CreateVector3(builder, x, y, z))
-	movement := protocol.MovementEnd(builder)
+	protocol.PlayerInputStart(builder)
+	protocol.PlayerInputAddActionType(builder, protocol.ActionMove)
+	protocol.PlayerInputAddAction(builder, move)
+	protocol.PlayerInputAddObjectId(builder, objID)
+	playerInput := protocol.PlayerInputEnd(builder)
 
 	protocol.NetworkMessageStart(builder)
-	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadMovement)
-	protocol.NetworkMessageAddPayload(builder, movement)
+	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadPlayerInput)
+	protocol.NetworkMessageAddPayload(builder, playerInput)
 	netMsg := protocol.NetworkMessageEnd(builder)
 
 	builder.Finish(netMsg)
 
 	return builder.FinishedBytes()
 }
+
+// func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) []byte {
+// 	builder := flatbuffers.NewBuilder(1024)
+//
+// 	id := builder.CreateString(p.id)
+// 	owner := builder.CreateString(p.owner)
+//
+// 	protocol.MovementStart(builder)
+// 	protocol.MovementAddObjectId(builder, id)
+// 	protocol.MovementAddObjectOwner(builder, owner)
+// 	protocol.MovementAddDirection(builder, protocol.CreateVector3(builder, x, y, z))
+// 	movement := protocol.MovementEnd(builder)
+//
+// 	protocol.NetworkMessageStart(builder)
+// 	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadMovement)
+// 	protocol.NetworkMessageAddPayload(builder, movement)
+// 	netMsg := protocol.NetworkMessageEnd(builder)
+//
+// 	builder.Finish(netMsg)
+//
+// 	return builder.FinishedBytes()
+// }

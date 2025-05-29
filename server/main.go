@@ -11,6 +11,7 @@ import (
 	protocol "xrossover-server/flatbuffers/xrossover"
 	"xrossover-server/internal/game"
 
+	rl "github.com/gen2brain/raylib-go/raylib"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
@@ -34,6 +35,7 @@ type Client struct {
 
 func main() {
 	fmt.Println("Welcome to the Game Server!")
+	g.Broadcast = broadcast
 	go startTCP()
 	go startUDP()
 	go g.Run()
@@ -88,7 +90,7 @@ func handleConnection(conn net.Conn) {
 		}
 		dataLen := binary.BigEndian.Uint32(lengthPrefix)
 		if dataLen > 10_000 {
-			log.Println("Message too large")
+			log.Println("Server: Message too large")
 			break
 		}
 
@@ -167,29 +169,69 @@ func readData(conn net.Conn, data []byte, n int) {
 			log.Println("Current object registry:", g.ObjectRegistry.Objects)
 			broadcast("tcp", "", g.ObjectRegistry.Serialize())
 		}
-	case protocol.PayloadMovement:
-		// log.Println("recieved movement data")
+	// case protocol.PayloadMovement:
+	// 	// log.Println("recieved movement data")
+	// 	table := new(flatbuffers.Table)
+	// 	if msg.Payload(table) {
+	// 		fbDirection := new(protocol.Vector3)
+	// 		fbMovement := new(protocol.Movement)
+	// 		fbMovement.Init(table.Bytes, table.Pos)
+	// 		id := string(fbMovement.ObjectId())
+	// 		owner := string(fbMovement.ObjectOwner())
+	// 		direction := fbMovement.Direction(fbDirection)
+	// 		obj, err := g.ObjectRegistry.Get(id)
+	// 		if err != nil {
+	// 			log.Println(err)
+	// 			return
+	// 		}
+	// 		obj.Move(direction.X(), direction.Y(), direction.Z())
+	// 		// TODO: change to udp and fix for udp
+	// 		broadcast("tcp", owner, obj.Serialize())
+	// 	}
+	case protocol.PayloadPlayerInput:
+		log.Println("recieved movement data")
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
-			fbDirection := new(protocol.Vector3)
-			fbMovement := new(protocol.Movement)
-			fbMovement.Init(table.Bytes, table.Pos)
-			id := string(fbMovement.ObjectId())
-			owner := string(fbMovement.ObjectOwner())
-			direction := fbMovement.Direction(fbDirection)
-			obj, err := g.ObjectRegistry.Get(id)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			obj.Move(direction.X(), direction.Y(), direction.Z())
-			// TODO: change to udp and fix for udp
-			broadcast("tcp", owner, obj.Serialize())
+			fbInput := new(protocol.PlayerInput)
+			fbInput.Init(table.Bytes, table.Pos)
+			input := deserializeInput(fbInput)
+			g.AddPlayerInput(input)
+			// broadcast("tcp", owner, obj.Serialize())
 		}
 	default:
 		log.Println("Received without type:", msg.PayloadType())
 	}
 
+}
+
+func deserializeInput(fbInput *protocol.PlayerInput) game.PlayerInput {
+	i := game.PlayerInput{
+		ObjectID: string(fbInput.ObjectId()),
+	}
+
+	switch fbInput.ActionType() {
+	case protocol.ActionMove:
+		table := new(flatbuffers.Table)
+		if fbInput.Action(table) {
+			fbMove := new(protocol.Move)
+			fbMove.Init(table.Bytes, table.Pos)
+
+			fbDir := new(protocol.Vector3)
+			dir := fbMove.Direction(fbDir)
+
+			i.Action = game.Move{
+				Direction: rl.Vector3{
+					X: dir.X(),
+					Y: dir.Y(),
+					Z: dir.Z(),
+				},
+			}
+		}
+	default:
+		i.Action = nil
+	}
+
+	return i
 }
 
 func addClient(username string, conn net.Conn, udpStr string) {

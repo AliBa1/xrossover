@@ -4,6 +4,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const (
@@ -14,14 +16,30 @@ const (
 type Game struct {
 	inputs         map[string][]PlayerInput
 	ObjectRegistry *ObjectRegistry
+	Broadcast      func(protocol, owner string, data []byte)
 	sync.Mutex
 }
 
+// type PlayerInput struct {
+// 	Username string
+// 	ObjectID string
+// 	Input    string
+// }
+
 type PlayerInput struct {
-	Username string
 	ObjectID string
-	Input    string
+	Action   Action
 }
+
+type Action interface {
+	Type() string
+}
+
+type Move struct {
+	Direction rl.Vector3
+}
+
+func (m Move) Type() string { return "move" }
 
 func (g *Game) Run() {
 	g.initialize()
@@ -30,6 +48,7 @@ func (g *Game) Run() {
 }
 
 func (g *Game) initialize() {
+	g.inputs = make(map[string][]PlayerInput)
 	g.ObjectRegistry = NewObjectRegistry()
 }
 
@@ -53,9 +72,9 @@ func (g *Game) update() {
 		for _, i := range inputs {
 			object, err := g.ObjectRegistry.Get(i.ObjectID)
 			if err != nil {
-				log.Println(err)
+				log.Println("Error geting obj", err)
 			} else {
-				g.processInput(object, i.Input)
+				g.processInput(object, i.Action)
 			}
 		}
 		g.inputs[username] = nil
@@ -63,17 +82,30 @@ func (g *Game) update() {
 	}
 }
 
-func (g *Game) processInput(obj GameObject, input string) {
-
+func (g *Game) processInput(obj GameObject, action Action) {
+	switch v := action.(type) {
+	case Move:
+		obj.Move(v.Direction.X, v.Direction.Y, v.Direction.Z)
+		log.Println("applied movement")
+		// Broadcast()
+		if g.Broadcast != nil {
+			g.Broadcast("tcp", obj.Owner(), obj.Serialize())
+		}
+	}
 }
 
-func (g *Game) AddPlayerInput(username, objectID, input string) {
+func (g *Game) AddPlayerInput(input PlayerInput) {
 	g.Lock()
 	defer g.Unlock()
 
-	g.inputs[username] = append(g.inputs[username], PlayerInput{
-		Username: username,
-		ObjectID: objectID,
-		Input:    input,
+	obj, err := g.ObjectRegistry.Get(input.ObjectID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	g.inputs[obj.Owner()] = append(g.inputs[obj.Owner()], PlayerInput{
+		ObjectID: input.ObjectID,
+		Action:   input.Action,
 	})
 }

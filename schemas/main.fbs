@@ -17,17 +17,24 @@ table PlayerBox {
 	position: Vector3;
 }
 
-table Movement {
-	object_id: string;
-	object_owner: string;
+// table Movement {
+//	object_id: string;
+//	object_owner: string;
+//	direction: Vector3;
+// }
+
+table Move {
 	direction: Vector3;
 }
 
-// table PlayerInput {
-//	username: string;
-//	object_id: string;
-//	input: string;
-//}
+union Action {
+	Move
+}
+
+table PlayerInput {
+	object_id: string;
+	action: Action;
+}
 
 union GameObjectUnion { PlayerBox }
 
@@ -43,7 +50,7 @@ union Payload {
 	ConnectionRequest,
 	ObjectRegistry,
 	PlayerBox,
-	Movement
+	PlayerInput
 }
 
 table NetworkMessage {

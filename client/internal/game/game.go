@@ -132,6 +132,7 @@ func (g *Game) processInput() {
 }
 
 func (g *Game) sendMovement(x float32, y float32, z float32) {
+	log.Println(g.Username, "sent movement data")
 	if g.udpConn != nil {
 		g.sendMessage("udp", g.box.SerializeMove(x, y, z))
 	}
@@ -235,12 +236,13 @@ func (g *Game) handleConnection(conn net.Conn) {
 		lengthPrefix := make([]byte, 4)
 		_, err := conn.Read(lengthPrefix)
 		if err != nil {
-			log.Println("Failed to read message length:", err)
+			// log.Println("Failed to read message length:", err)
+			log.Fatalln("Failed to read message length:", err)
 			break
 		}
 		dataLen := binary.BigEndian.Uint32(lengthPrefix)
 		if dataLen > 10_000 {
-			log.Println("Message too large")
+			log.Println("Client: Message too large")
 			break
 		}
 
