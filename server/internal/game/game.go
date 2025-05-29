@@ -72,7 +72,7 @@ func (g *Game) update() {
 		for _, i := range inputs {
 			object, err := g.ObjectRegistry.Get(i.ObjectID)
 			if err != nil {
-				log.Println("Error geting obj", err)
+				log.Println(err)
 			} else {
 				g.processInput(object, i.Action)
 			}
@@ -86,10 +86,9 @@ func (g *Game) processInput(obj GameObject, action Action) {
 	switch v := action.(type) {
 	case Move:
 		obj.Move(v.Direction.X, v.Direction.Y, v.Direction.Z)
-		log.Println("applied movement")
-		// Broadcast()
 		if g.Broadcast != nil {
 			g.Broadcast("tcp", obj.Owner(), obj.Serialize())
+			// g.Broadcast("udp", obj.Owner(), obj.Serialize())
 		}
 	}
 }

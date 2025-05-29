@@ -32,9 +32,9 @@ PIDS+=($!)
 sleep 1  # give server time to start
 
 echo "=== Launching clients ==="
-./client/xrossover-client Alice &
+./client/xrossover-client Alice 55501 &
 PIDS+=($!)
-./client/xrossover-client Bob &
+./client/xrossover-client Bob 55502 &
 PIDS+=($!)
 
 echo "=== All processes launched === (Press Ctrl+C to stop)"

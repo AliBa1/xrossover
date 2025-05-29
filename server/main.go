@@ -23,8 +23,7 @@ const (
 var (
 	clients      = map[string]*Client{}
 	clientsMutex sync.Mutex
-	// objectRegistry = game.NewObjectRegistry()
-	g = game.Game{}
+	g            = game.Game{}
 )
 
 type Client struct {
@@ -46,11 +45,11 @@ func main() {
 func startTCP() {
 	listener, err := net.Listen("tcp", ":"+TCPPort)
 	if err != nil {
-		log.Println("Error:", err)
+		log.Fatalln("Error:", err)
 	}
 	defer listener.Close()
 
-	fmt.Println("Listening TCP on port", TCPPort)
+	log.Println("Listening TCP on port", TCPPort)
 
 	for {
 		conn, err := listener.Accept()
@@ -73,7 +72,7 @@ func startUDP() {
 		log.Fatalln("Error:", err)
 	}
 
-	fmt.Println("Listening UDP on port", UDPPort)
+	log.Println("Listening UDP on port", UDPPort)
 
 	go handleConnection(conn)
 }
@@ -100,7 +99,7 @@ func handleConnection(conn net.Conn) {
 			if err == io.EOF {
 				log.Println("Client Disconnected")
 			} else {
-				log.Println("Error erere:", err)
+				log.Println("Error reading data on client:", err)
 			}
 
 			// clientsMutex.Lock()
@@ -129,6 +128,7 @@ func broadcast(protocol, owner string, data []byte) {
 				conn, err := net.DialUDP("udp", nil, c.udpAddr)
 				if err != nil {
 					log.Println("Error broadcasting UDP message:", err)
+					log.Fatalln("UDP Addr:", c.udpAddr)
 				} else {
 					sendMessage(conn, data)
 				}
@@ -143,7 +143,6 @@ func readData(conn net.Conn, data []byte, n int) {
 	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
 	switch msg.PayloadType() {
 	case protocol.PayloadConnectionRequest:
-		log.Println("adding to clients")
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
 			connReq := new(protocol.ConnectionRequest)
@@ -153,7 +152,6 @@ func readData(conn net.Conn, data []byte, n int) {
 			addClient(username, conn, udpStr)
 		}
 	case protocol.PayloadPlayerBox:
-		log.Println("recieved a player box")
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
 			fbPosition := new(protocol.Vector3)
@@ -166,7 +164,6 @@ func readData(conn net.Conn, data []byte, n int) {
 			playerBox := game.NewPlayerBox(id, owner, *position)
 			g.ObjectRegistry.Add(playerBox)
 
-			log.Println("Current object registry:", g.ObjectRegistry.Objects)
 			broadcast("tcp", "", g.ObjectRegistry.Serialize())
 		}
 	// case protocol.PayloadMovement:
@@ -189,7 +186,6 @@ func readData(conn net.Conn, data []byte, n int) {
 	// 		broadcast("tcp", owner, obj.Serialize())
 	// 	}
 	case protocol.PayloadPlayerInput:
-		log.Println("recieved movement data")
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
 			fbInput := new(protocol.PlayerInput)
@@ -253,7 +249,6 @@ func addClient(username string, conn net.Conn, udpStr string) {
 		clients[username].udpAddr = udpAddr
 	}
 	clientsMutex.Unlock()
-	log.Println(username, "added to clients")
 }
 
 func sendMessage(conn net.Conn, data []byte) error {

@@ -25,6 +25,7 @@ type Game struct {
 	camera         rl.Camera3D
 	box            *PlayerBox
 	tcpConn        net.Conn
+	UDPPort        string
 	udpConn        net.Conn
 	objectRegistry *ObjectRegistry
 }
@@ -132,7 +133,7 @@ func (g *Game) processInput() {
 }
 
 func (g *Game) sendMovement(x float32, y float32, z float32) {
-	log.Println(g.Username, "sent movement data")
+	// log.Println(g.Username, "sent movement data")
 	if g.udpConn != nil {
 		g.sendMessage("udp", g.box.SerializeMove(x, y, z))
 	}
@@ -170,7 +171,8 @@ func (g *Game) connectToTCP() {
 		return
 	}
 
-	udpAddr, err := net.ResolveUDPAddr("udp", HOST+":"+UDPPORT)
+	// udpAddr, err := net.ResolveUDPAddr("udp", HOST+":"+UDPPORT)
+	udpAddr, err := net.ResolveUDPAddr("udp", ":"+g.UDPPort)
 	if err != nil {
 		log.Println("Failed to get UDP address:", err)
 	}
@@ -213,7 +215,7 @@ func (g *Game) sendMessage(protocol string, data []byte) error {
 	if protocol == "tcp" {
 		conn = g.tcpConn
 	} else {
-		conn = g.tcpConn
+		conn = g.udpConn
 	}
 
 	_, err := conn.Write(lengthPrefix[:])
@@ -252,12 +254,8 @@ func (g *Game) handleConnection(conn net.Conn) {
 			if err == io.EOF {
 				log.Println("Client Disconnected")
 			} else {
-				log.Println("Error erere:", err)
+				log.Println("Error reading data on client:", err)
 			}
-
-			// clientsMutex.Lock()
-			// delete(clients, c.ID)
-			// clientsMutex.Unlock()
 			break
 		}
 
@@ -269,7 +267,6 @@ func (g *Game) readData(conn net.Conn, data []byte, n int) {
 	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
 	switch msg.PayloadType() {
 	case protocol.PayloadObjectRegistry:
-		log.Println("recieved object registry from server")
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
 			objectRegistry := new(protocol.ObjectRegistry)
@@ -291,7 +288,6 @@ func (g *Game) readData(conn net.Conn, data []byte, n int) {
 							position := fbBox.Position(fbPosition)
 							playerBox := NewFBPlayerBox(id, owner, *position)
 							g.objectRegistry.Add(playerBox)
-							log.Println(g.Username, "Added box with ID to client registry:", id)
 						}
 					}
 				}

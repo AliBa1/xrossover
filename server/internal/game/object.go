@@ -2,7 +2,6 @@ package game
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -33,10 +32,8 @@ func NewObjectRegistry() *ObjectRegistry {
 func (o *ObjectRegistry) Add(obj GameObject) {
 	o.Lock()
 	defer o.Unlock()
-	fmt.Println("Object to add:", obj)
-	fmt.Println("Obj ID", obj.ID())
+
 	o.Objects[obj.ID()] = obj
-	fmt.Println("Objs after addition:", o.Objects)
 }
 
 func (o *ObjectRegistry) Remove(id string) {
