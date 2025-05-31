@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -112,7 +111,6 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-// TODO: add a username as a param to send to all except a client since they already applied their changes through prediction
 func broadcast(protocol, owner string, data []byte) {
 	if protocol != "tcp" && protocol != "udp" {
 		log.Println("Must broadcast message using TCP or UDP")
@@ -123,16 +121,15 @@ func broadcast(protocol, owner string, data []byte) {
 		if c.Username != owner {
 			switch protocol {
 			case "tcp":
-				sendMessage(c.tcpConn, data)
-			case "udp":
-				conn, err := net.DialUDP("udp", nil, c.udpAddr)
+				err := writeTCP(c.tcpConn, data)
 				if err != nil {
-					log.Println("Error broadcasting UDP message:", err)
-					log.Fatalln("UDP Addr:", c.udpAddr)
-				} else {
-					sendMessage(conn, data)
+					log.Println(err)
 				}
-
+			case "udp":
+				err := writeUDP(c.udpAddr, data)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}
@@ -251,20 +248,35 @@ func addClient(username string, conn net.Conn, udpStr string) {
 	clientsMutex.Unlock()
 }
 
-func sendMessage(conn net.Conn, data []byte) error {
+func writeTCP(conn net.Conn, data []byte) error {
 	length := uint32(len(data))
 	var lengthPrefix [4]byte
 	binary.BigEndian.PutUint32(lengthPrefix[:], length)
 
 	_, err := conn.Write(lengthPrefix[:])
 	if err != nil {
-		return errors.New("error sending buffer length prefix to server")
+		return err
 	}
 
 	_, err = conn.Write(data)
 	if err != nil {
-		return errors.New("error sending data to server")
+		return err
 	}
 
+	return nil
+}
+
+func writeUDP(remoteAddr *net.UDPAddr, data []byte) error {
+	conn, err := net.DialUDP("udp", nil, remoteAddr)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.Write(data)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Sent UDP msg to", remoteAddr)
 	return nil
 }

@@ -38,7 +38,7 @@ func (g *Game) Run() {
 
 func (g *Game) initialize() {
 	g.objectRegistry = NewObjectRegistry()
-	rl.InitWindow(WIDTH, HEIGHT, "Game Window")
+	rl.InitWindow(WIDTH, HEIGHT, g.Username+"'s Game Window")
 	g.camera = rl.Camera3D{
 		Position:   rl.Vector3{X: 0.0, Y: 10.0, Z: 10.0},
 		Target:     rl.Vector3{X: 0.0, Y: 0.0, Z: 0.0},
@@ -57,12 +57,10 @@ func (g *Game) loop() {
 		g.processInput()
 		rl.BeginDrawing()
 		g.updateDrawing()
-		if g.tcpConn != nil {
-			go g.handleConnection(g.tcpConn)
-		}
-		if g.udpConn != nil {
-			go g.handleConnection(g.udpConn)
-		}
+
+		// go g.handleTCP()
+		// go g.handleUDP()
+
 		rl.EndDrawing()
 	}
 
@@ -102,6 +100,9 @@ func (g *Game) updateDrawing() {
 }
 
 func (g *Game) update3DOutput() {
+	g.objectRegistry.Lock()
+	defer g.objectRegistry.Unlock()
+
 	for _, obj := range g.objectRegistry.Objects {
 		rl.DrawCube(obj.Position(), obj.Dimensions().Width, obj.Dimensions().Height, obj.Dimensions().Length, obj.Color())
 		rl.DrawCubeWires(obj.Position(), 1.0, 1.0, 1.0, rl.Maroon)
@@ -129,6 +130,11 @@ func (g *Game) processInput() {
 	if rl.IsKeyPressed(rl.KeyC) && g.tcpConn == nil {
 		g.connectToTCP()
 		g.connectToUDP()
+
+		go g.handleUDP()
+		go g.handleTCP()
+		// go g.handleUDP()
+
 	}
 }
 
@@ -193,13 +199,26 @@ func (g *Game) connectToTCP() {
 // TODO: make testable by returning error if error
 func (g *Game) connectToUDP() {
 	log.Println("Starting UDP connection to server...")
-	var d net.Dialer
-	var err error
-	g.udpConn, err = d.Dial("udp", HOST+":"+UDPPORT)
+
+	localAddr, err := net.ResolveUDPAddr("udp", ":"+g.UDPPort)
 	if err != nil {
-		log.Println("Error connecting to server via UDP:", err)
+		log.Println("Error creating local UDP address:", err)
 		return
 	}
+
+	remoteAddr, err := net.ResolveUDPAddr("udp", HOST+":"+UDPPORT)
+	if err != nil {
+		log.Println("Error creating server UDP address:", err)
+		return
+	}
+
+	conn, err := net.DialUDP("udp", localAddr, remoteAddr)
+	if err != nil {
+		log.Println("Error setting up UDP connection:", err)
+		return
+	}
+
+	g.udpConn = conn
 }
 
 func (g *Game) sendMessage(protocol string, data []byte) error {
@@ -263,6 +282,59 @@ func (g *Game) handleConnection(conn net.Conn) {
 	}
 }
 
+func (g *Game) handleTCP() {
+	if g.tcpConn != nil {
+		for {
+			lengthPrefix := make([]byte, 4)
+			_, err := g.tcpConn.Read(lengthPrefix)
+			if err != nil {
+				// log.Println("Failed to read message length:", err)
+				log.Fatalln("Failed to read message length:", err)
+				break
+			}
+			dataLen := binary.BigEndian.Uint32(lengthPrefix)
+			if dataLen > 10_000 {
+				log.Println("Client: Message too large")
+				break
+			}
+
+			data := make([]byte, dataLen)
+			_, err = g.tcpConn.Read(data)
+			if err != nil {
+				if err == io.EOF {
+					log.Println("Client Disconnected")
+				} else {
+					log.Println("Error reading data on client:", err)
+				}
+				break
+			}
+
+			g.readData(g.tcpConn, data, int(dataLen))
+		}
+	}
+}
+
+func (g *Game) handleUDP() {
+	if g.udpConn != nil {
+		for {
+			data := make([]byte, 4096)
+			n, err := g.udpConn.Read(data)
+			if err != nil {
+				if err == io.EOF {
+					log.Println("Client Disconnected")
+				} else {
+					log.Println("Error reading data on client:", err)
+				}
+				break
+			}
+
+			g.readData(g.udpConn, data, n)
+		}
+	} else {
+		log.Println("No UDP connection")
+	}
+}
+
 func (g *Game) readData(conn net.Conn, data []byte, n int) {
 	msg := protocol.GetRootAsNetworkMessage(data[:n], 0)
 	switch msg.PayloadType() {
@@ -308,7 +380,6 @@ func (g *Game) readData(conn net.Conn, data []byte, n int) {
 			}
 			obj.UpdatePosition(position.X(), position.Y(), position.Z())
 		}
-
 	default:
 		log.Println("Received without type:", msg.PayloadType())
 	}
