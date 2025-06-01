@@ -12,6 +12,7 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+// TODO: set a global serverAddr
 const (
 	WIDTH   = 800
 	HEIGHT  = 450
@@ -141,7 +142,8 @@ func (g *Game) processInput() {
 func (g *Game) sendMovement(x float32, y float32, z float32) {
 	// log.Println(g.Username, "sent movement data")
 	if g.udpConn != nil {
-		g.sendMessage("udp", g.box.SerializeMove(x, y, z))
+		// g.sendMessage("udp", g.box.SerializeMove(x, y, z))
+		g.writeUDP(g.box.SerializeMove(x, y, z))
 	}
 }
 
@@ -183,13 +185,15 @@ func (g *Game) connectToTCP() {
 		log.Println("Failed to get UDP address:", err)
 	}
 
-	err = g.sendMessage("tcp", g.serializeConnectionRequest(udpAddr))
+	// err = g.sendMessage("tcp", g.serializeConnectionRequest(udpAddr))
+	err = g.writeTCP(g.serializeConnectionRequest(udpAddr))
 	if err != nil {
 		log.Println("Error sending player box:", err)
 		return
 	}
 
-	err = g.sendMessage("tcp", g.box.Serialize())
+	// err = g.sendMessage("tcp", g.box.Serialize())
+	err = g.writeTCP(g.box.Serialize())
 	if err != nil {
 		log.Println("Error sending player box:", err)
 		return
@@ -222,65 +226,35 @@ func (g *Game) connectToUDP() {
 	g.udpConn = conn
 }
 
-func (g *Game) sendMessage(protocol string, data []byte) error {
-	if protocol != "tcp" && protocol != "udp" {
-		return errors.New("attempted to send message with an unsupported protocol")
-	}
-
+func (g *Game) writeTCP(data []byte) error {
 	length := uint32(len(data))
 	var lengthPrefix [4]byte
 	binary.BigEndian.PutUint32(lengthPrefix[:], length)
 
-	var conn net.Conn
-	if protocol == "tcp" {
-		conn = g.tcpConn
-	} else {
-		conn = g.udpConn
+	_, err := g.tcpConn.Write(lengthPrefix[:])
+	if err != nil {
+		return err
 	}
 
-	_, err := conn.Write(lengthPrefix[:])
+	_, err = g.tcpConn.Write(data)
 	if err != nil {
-		return errors.New("error sending buffer length prefix to server")
-	}
-
-	_, err = conn.Write(data)
-	if err != nil {
-		return errors.New("error sending data to server")
+		return err
 	}
 
 	return nil
 }
 
-func (g *Game) handleConnection(conn net.Conn) {
-	defer conn.Close()
+func (g *Game) writeUDP(data []byte) error {
+	// if g.udpConn == nil {
+	// 	return errors.New("udp connection not initialized on the client")
+	// }
 
-	for {
-		lengthPrefix := make([]byte, 4)
-		_, err := conn.Read(lengthPrefix)
-		if err != nil {
-			// log.Println("Failed to read message length:", err)
-			log.Fatalln("Failed to read message length:", err)
-			break
-		}
-		dataLen := binary.BigEndian.Uint32(lengthPrefix)
-		if dataLen > 10_000 {
-			log.Println("Client: Message too large")
-			break
-		}
-
-		data := make([]byte, dataLen)
-		_, err = conn.Read(data)
-		if err != nil {
-			if err == io.EOF {
-				log.Println("Client Disconnected")
-			} else {
-				log.Println("Error reading data on client:", err)
-			}
-			break
-		}
-
-		g.readData(conn, data, int(dataLen))
+	_, err := g.udpConn.Write(data)
+	if err != nil {
+		return err
 	}
+
+	return nil
 }
 
 func (g *Game) handleTCP() {

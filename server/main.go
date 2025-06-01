@@ -58,7 +58,7 @@ func startTCP() {
 			log.Println("Error:", err)
 			continue
 		}
-		go handleConnection(conn)
+		go handleTCP(conn)
 	}
 }
 
@@ -76,12 +76,10 @@ func startUDP() {
 
 	log.Println("Listening UDP on port", UDPPort)
 
-	go handleConnection(conn)
+	go handleUDP()
 }
 
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-
+func handleTCP(conn net.Conn) {
 	for {
 		lengthPrefix := make([]byte, 4)
 		_, err := conn.Read(lengthPrefix)
@@ -89,9 +87,10 @@ func handleConnection(conn net.Conn) {
 			log.Println("Failed to read message length:", err)
 			break
 		}
+
 		dataLen := binary.BigEndian.Uint32(lengthPrefix)
 		if dataLen > 10_000 {
-			log.Println("Server: Message too large")
+			log.Println("Client: Message too large")
 			break
 		}
 
@@ -101,16 +100,30 @@ func handleConnection(conn net.Conn) {
 			if err == io.EOF {
 				log.Println("Client Disconnected")
 			} else {
-				log.Println("Error reading data on client:", err)
+				log.Println("Error reading data on server:", err)
 			}
-
-			// clientsMutex.Lock()
-			// delete(clients, c.ID)
-			// clientsMutex.Unlock()
 			break
 		}
 
 		readData(conn, data, int(dataLen))
+
+	}
+}
+
+func handleUDP() {
+	for {
+		data := make([]byte, 4096)
+		n, err := localUDPConn.Read(data)
+		if err != nil {
+			if err == io.EOF {
+				log.Println("Client Disconnected")
+			} else {
+				log.Println("Error reading data on client:", err)
+			}
+			break
+		}
+
+		readData(localUDPConn, data, n)
 	}
 }
 
