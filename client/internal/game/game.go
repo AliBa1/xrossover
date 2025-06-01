@@ -178,7 +178,7 @@ func (g *Game) connectToTCP() {
 	}
 
 	// udpAddr, err := net.ResolveUDPAddr("udp", HOST+":"+UDPPORT)
-	udpAddr, err := net.ResolveUDPAddr("udp", ":"+g.UDPPort)
+	udpAddr, err := net.ResolveUDPAddr("udp", HOST+":"+g.UDPPort)
 	if err != nil {
 		log.Println("Failed to get UDP address:", err)
 	}
@@ -200,7 +200,8 @@ func (g *Game) connectToTCP() {
 func (g *Game) connectToUDP() {
 	log.Println("Starting UDP connection to server...")
 
-	localAddr, err := net.ResolveUDPAddr("udp", ":"+g.UDPPort)
+	// localAddr, err := net.ResolveUDPAddr("udp", ":"+g.UDPPort)
+	localAddr, err := net.ResolveUDPAddr("udp", HOST+":"+g.UDPPort)
 	if err != nil {
 		log.Println("Error creating local UDP address:", err)
 		return

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +24,7 @@ var (
 	clients      = map[string]*Client{}
 	clientsMutex sync.Mutex
 	g            = game.Game{}
+	localUDPConn *net.UDPConn
 )
 
 type Client struct {
@@ -70,6 +72,7 @@ func startUDP() {
 	if err != nil {
 		log.Fatalln("Error:", err)
 	}
+	localUDPConn = conn
 
 	log.Println("Listening UDP on port", UDPPort)
 
@@ -267,16 +270,14 @@ func writeTCP(conn net.Conn, data []byte) error {
 }
 
 func writeUDP(remoteAddr *net.UDPAddr, data []byte) error {
-	conn, err := net.DialUDP("udp", nil, remoteAddr)
+	if localUDPConn == nil {
+		return errors.New("udp connection not initialized on the server")
+	}
+
+	_, err := localUDPConn.WriteToUDP(data, remoteAddr)
 	if err != nil {
 		return err
 	}
 
-	_, err = conn.Write(data)
-	if err != nil {
-		return err
-	}
-
-	log.Println("Sent UDP msg to", remoteAddr)
 	return nil
 }

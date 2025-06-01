@@ -87,8 +87,7 @@ func (g *Game) processInput(obj GameObject, action Action) {
 	case Move:
 		obj.Move(v.Direction.X, v.Direction.Y, v.Direction.Z)
 		if g.Broadcast != nil {
-			g.Broadcast("tcp", obj.Owner(), obj.Serialize())
-			// g.Broadcast("udp", obj.Owner(), obj.Serialize())
+			g.Broadcast("udp", obj.Owner(), obj.Serialize())
 		}
 	}
 }
