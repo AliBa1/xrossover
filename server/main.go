@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -34,7 +33,6 @@ type Client struct {
 }
 
 func main() {
-	fmt.Println("Welcome to the Game Server!")
 	g.Broadcast = broadcast
 	go startTCP()
 	go startUDP()
