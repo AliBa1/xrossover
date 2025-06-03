@@ -21,7 +21,7 @@ type GameObject interface {
 	UpdatePosition(x, y, z float32)
 	Dimensions() Dimensions
 	Color() color.RGBA
-	// Update(dt float32)
+	Update(dt float32)
 	Serialize() []byte
 }
 

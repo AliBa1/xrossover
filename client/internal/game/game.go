@@ -2,6 +2,7 @@ package game
 
 import (
 	"log"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -15,6 +16,7 @@ type Game struct {
 	Username    string
 	camera      rl.Camera3D
 	box         *PlayerBox
+	ball        *Ball
 	objRegistry *ObjectRegistry
 	network     *Network
 }
@@ -38,27 +40,38 @@ func (g *Game) initialize() {
 		Fovy:       45.0,
 		Projection: rl.CameraPerspective,
 	}
-	g.box = NewPlayerBox(g.Username, g.Username)
+	g.box = NewPlayerBox(g.Username+"-Box", g.Username)
+	g.ball = NewBall(g.Username+"-Ball", g.Username, g.box)
 	g.objRegistry.Add(g.box)
 
 	rl.SetTargetFPS(60)
 }
 
 func (g *Game) loop() {
+	lastTime := time.Now()
 	for !rl.WindowShouldClose() {
+		currentTime := time.Now()
+		dt := float32(currentTime.Sub(lastTime).Seconds())
+		lastTime = currentTime
+
+		g.update(dt)
+
 		g.processInput()
 		rl.BeginDrawing()
 		g.updateDrawing()
 
 		rl.EndDrawing()
 	}
-
 }
 
 func (g *Game) shutdown() {
 	rl.CloseWindow()
 
 	g.network.Disconnect()
+}
+
+func (g *Game) update(dt float32) {
+	g.ball.Update(dt)
 }
 
 func (g *Game) updateDrawing() {
@@ -90,8 +103,11 @@ func (g *Game) update3DOutput() {
 
 	for _, obj := range g.objRegistry.Objects {
 		rl.DrawCube(obj.Position(), obj.Dimensions().Width, obj.Dimensions().Height, obj.Dimensions().Length, obj.Color())
+		// rl.DrawSphere(rl.Vector3{X: obj.Position().X + 0.5, Y: obj.Position().Y + 0.5, Z: obj.Position().Z - 0.5}, 0.5, rl.Orange)
+
 		rl.DrawCubeWires(obj.Position(), 1.0, 1.0, 1.0, rl.Maroon)
 	}
+	rl.DrawSphere(g.ball.position, g.ball.radius, rl.Orange)
 	rl.DrawGrid(10, 1.0)
 }
 

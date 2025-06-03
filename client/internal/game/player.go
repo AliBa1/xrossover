@@ -44,17 +44,10 @@ func NewFBPlayerBox(id, owner string, pos protocol.Vector3) *PlayerBox {
 	}
 }
 
-func (p *PlayerBox) ID() string {
-	return p.id
-}
-
-func (p *PlayerBox) Owner() string {
-	return p.owner
-}
-
-func (p *PlayerBox) Position() rl.Vector3 {
-	return p.position
-}
+func (p *PlayerBox) ID() string           { return p.id }
+func (p *PlayerBox) Owner() string        { return p.owner }
+func (p *PlayerBox) Position() rl.Vector3 { return p.position }
+func (p *PlayerBox) Color() color.RGBA    { return p.color }
 
 func (p *PlayerBox) Dimensions() Dimensions {
 	return Dimensions{
@@ -64,11 +57,9 @@ func (p *PlayerBox) Dimensions() Dimensions {
 	}
 }
 
-func (p *PlayerBox) Color() color.RGBA {
-	return p.color
-}
+func (p *PlayerBox) Update(dt float32) {
 
-// func (p *PlayerBox) Update()
+}
 
 func (p *PlayerBox) Move(x, y, z float32) {
 	p.position.X += x
@@ -127,25 +118,3 @@ func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) []byte {
 
 	return builder.FinishedBytes()
 }
-
-// func (p *PlayerBox) SerializeMove(x float32, y float32, z float32) []byte {
-// 	builder := flatbuffers.NewBuilder(1024)
-//
-// 	id := builder.CreateString(p.id)
-// 	owner := builder.CreateString(p.owner)
-//
-// 	protocol.MovementStart(builder)
-// 	protocol.MovementAddObjectId(builder, id)
-// 	protocol.MovementAddObjectOwner(builder, owner)
-// 	protocol.MovementAddDirection(builder, protocol.CreateVector3(builder, x, y, z))
-// 	movement := protocol.MovementEnd(builder)
-//
-// 	protocol.NetworkMessageStart(builder)
-// 	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadMovement)
-// 	protocol.NetworkMessageAddPayload(builder, movement)
-// 	netMsg := protocol.NetworkMessageEnd(builder)
-//
-// 	builder.Finish(netMsg)
-//
-// 	return builder.FinishedBytes()
-// }
