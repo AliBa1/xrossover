@@ -84,6 +84,7 @@ func (g *Game) shutdown() {
 }
 
 func (g *Game) update(dt float32) {
+	// rl.UpdateCamera(&g.camera, rl.CameraFree)
 	g.ball.Update(dt)
 }
 
