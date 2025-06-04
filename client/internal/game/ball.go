@@ -9,22 +9,24 @@ import (
 )
 
 type Ball struct {
-	id        string
-	owner     string
-	possessor GameObject
-	position  rl.Vector3
-	radius    float32
-	velocity  rl.Vector3
+	id           string
+	owner        string
+	possessor    GameObject
+	position     rl.Vector3
+	radius       float32
+	velocity     rl.Vector3
+	acceleration rl.Vector3
 }
 
 func NewBall(id, owner string, possessor GameObject) *Ball {
 	return &Ball{
-		id:        id,
-		owner:     owner,
-		possessor: possessor,
-		position:  rl.Vector3{X: 0.0, Y: 3.0, Z: 0.0},
-		radius:    0.5,
-		velocity:  rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0},
+		id:           id,
+		owner:        owner,
+		possessor:    possessor,
+		position:     rl.Vector3{X: 0.0, Y: 3.0, Z: 0.0},
+		radius:       0.5,
+		velocity:     rl.Vector3{X: 0.0, Y: 3.0, Z: 0.0},
+		acceleration: rl.Vector3{X: 0.0, Y: Gravity, Z: 0.0},
 	}
 }
 
@@ -41,14 +43,18 @@ func (b *Ball) Update(dt float32) {
 		b.position.Z += b.velocity.Z * dt
 	}
 
+	b.velocity.Y += b.acceleration.Y * dt
 	b.position.Y += b.velocity.Y * dt
 
-	if b.position.Y-b.radius < 0 {
+	var bounceHeight float32
+	bounceHeight = 3.0
+	if b.position.Y-b.radius < GroundY {
 		b.velocity.Y *= -1
+		// b.velocity.Y *= -0.7
 		b.position.Y = b.radius
-	} else if b.position.Y+b.radius > 5 {
+	} else if b.position.Y+b.radius > bounceHeight {
 		b.velocity.Y *= -1
-		b.position.Y = 5 - b.radius
+		b.position.Y = bounceHeight - b.radius
 	}
 }
 

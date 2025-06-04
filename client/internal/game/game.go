@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	WIDTH  = 800
-	HEIGHT = 450
+	WIDTH   = 800
+	HEIGHT  = 450
+	GroundY = 0.0
+	// Gravity = -9.8
+	Gravity = -32.17
 )
 
 type Game struct {
@@ -17,6 +20,7 @@ type Game struct {
 	camera      rl.Camera3D
 	box         *PlayerBox
 	ball        *Ball
+	hoop        *Hoop
 	objRegistry *ObjectRegistry
 	network     *Network
 }
@@ -33,15 +37,24 @@ func (g *Game) Run() {
 
 func (g *Game) initialize() {
 	rl.InitWindow(WIDTH, HEIGHT, g.Username+"'s Game Window")
+	// g.camera = rl.Camera3D{
+	// 	Position:   rl.Vector3{X: 0.0, Y: 10.0, Z: 10.0},
+	// 	Target:     rl.Vector3{X: 0.0, Y: 0.0, Z: 0.0},
+	// 	Up:         rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0},
+	// 	Fovy:       45.0,
+	// 	Projection: rl.CameraPerspective,
+	// }
 	g.camera = rl.Camera3D{
-		Position:   rl.Vector3{X: 0.0, Y: 10.0, Z: 10.0},
-		Target:     rl.Vector3{X: 0.0, Y: 0.0, Z: 0.0},
-		Up:         rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0},
+		Position:   rl.Vector3{X: 0, Y: 10, Z: 20},
+		Target:     rl.Vector3{X: 0, Y: 5, Z: 0},
+		Up:         rl.Vector3{X: 0, Y: 1, Z: 0},
 		Fovy:       45.0,
 		Projection: rl.CameraPerspective,
 	}
+
 	g.box = NewPlayerBox(g.Username+"-Box", g.Username)
 	g.ball = NewBall(g.Username+"-Ball", g.Username, g.box)
+	g.hoop = NewHoop(0.0, -5.0)
 	g.objRegistry.Add(g.box)
 
 	rl.SetTargetFPS(60)
@@ -108,6 +121,7 @@ func (g *Game) update3DOutput() {
 		rl.DrawCubeWires(obj.Position(), 1.0, 1.0, 1.0, rl.Maroon)
 	}
 	rl.DrawSphere(g.ball.position, g.ball.radius, rl.Orange)
+	g.hoop.Draw()
 	rl.DrawGrid(10, 1.0)
 }
 
