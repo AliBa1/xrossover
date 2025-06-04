@@ -37,13 +37,6 @@ func (g *Game) Run() {
 
 func (g *Game) initialize() {
 	rl.InitWindow(WIDTH, HEIGHT, g.Username+"'s Game Window")
-	// g.camera = rl.Camera3D{
-	// 	Position:   rl.Vector3{X: 0.0, Y: 10.0, Z: 10.0},
-	// 	Target:     rl.Vector3{X: 0.0, Y: 0.0, Z: 0.0},
-	// 	Up:         rl.Vector3{X: 0.0, Y: 1.0, Z: 0.0},
-	// 	Fovy:       45.0,
-	// 	Projection: rl.CameraPerspective,
-	// }
 	g.camera = rl.Camera3D{
 		Position:   rl.Vector3{X: 0, Y: 10, Z: 20},
 		Target:     rl.Vector3{X: 0, Y: 5, Z: 0},
@@ -55,7 +48,9 @@ func (g *Game) initialize() {
 	g.box = NewPlayerBox(g.Username+"-Box", g.Username)
 	g.ball = NewBall(g.Username+"-Ball", g.Username, g.box)
 	g.hoop = NewHoop(0.0, -5.0)
+
 	g.objRegistry.Add(g.box)
+	g.objRegistry.Add(g.ball)
 
 	rl.SetTargetFPS(60)
 }
@@ -116,12 +111,9 @@ func (g *Game) update3DOutput() {
 	defer g.objRegistry.Unlock()
 
 	for _, obj := range g.objRegistry.Objects {
-		rl.DrawCube(obj.Position(), obj.Dimensions().Width, obj.Dimensions().Height, obj.Dimensions().Length, obj.Color())
-		// rl.DrawSphere(rl.Vector3{X: obj.Position().X + 0.5, Y: obj.Position().Y + 0.5, Z: obj.Position().Z - 0.5}, 0.5, rl.Orange)
-
-		rl.DrawCubeWires(obj.Position(), 1.0, 1.0, 1.0, rl.Maroon)
+		obj.Draw()
 	}
-	rl.DrawSphere(g.ball.position, g.ball.radius, rl.Orange)
+	// g.ball.Draw()
 	g.hoop.Draw()
 	rl.DrawGrid(10, 1.0)
 }

@@ -1,7 +1,9 @@
 package game
 
 import (
-	// protocol "xrossover-client/flatbuffers/xrossover"
+	protocol "xrossover-client/flatbuffers/xrossover"
+
+	"image/color"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 
@@ -16,6 +18,7 @@ type Ball struct {
 	radius       float32
 	velocity     rl.Vector3
 	acceleration rl.Vector3
+	color        color.RGBA
 }
 
 func NewBall(id, owner string, possessor GameObject) *Ball {
@@ -27,12 +30,26 @@ func NewBall(id, owner string, possessor GameObject) *Ball {
 		radius:       0.5,
 		velocity:     rl.Vector3{X: 0.0, Y: 3.0, Z: 0.0},
 		acceleration: rl.Vector3{X: 0.0, Y: Gravity, Z: 0.0},
+		color:        rl.Orange,
+	}
+}
+
+func NewFBBall(id, owner string, pos protocol.Vector3) *Ball {
+	return &Ball{
+		id:           id,
+		owner:        owner,
+		position:     rl.Vector3{X: pos.X(), Y: pos.Y(), Z: pos.Z()},
+		radius:       0.5,
+		velocity:     rl.Vector3{X: 0.0, Y: 3.0, Z: 0.0},
+		acceleration: rl.Vector3{X: 0.0, Y: Gravity, Z: 0.0},
+		color:        rl.Red,
 	}
 }
 
 func (b *Ball) ID() string           { return b.id }
 func (b *Ball) Owner() string        { return b.owner }
 func (b *Ball) Position() rl.Vector3 { return b.position }
+func (b *Ball) Color() color.RGBA    { return b.color }
 
 func (b *Ball) Update(dt float32) {
 	if b.possessor != nil {
@@ -58,6 +75,10 @@ func (b *Ball) Update(dt float32) {
 	}
 }
 
+func (b *Ball) Draw() {
+	rl.DrawSphere(b.position, b.radius, rl.Orange)
+}
+
 func (b *Ball) UpdatePosition(x, y, z float32) {
 	b.position.X = x
 	b.position.Y = y
@@ -67,21 +88,21 @@ func (b *Ball) UpdatePosition(x, y, z float32) {
 func (b *Ball) Serialize() []byte {
 	builder := flatbuffers.NewBuilder(1024)
 
-	// id := builder.CreateString(p.id)
-	// owner := builder.CreateString(p.owner)
-	//
-	// protocol.PlayerBoxStart(builder)
-	// protocol.PlayerBoxAddId(builder, id)
-	// protocol.PlayerBoxAddOwner(builder, owner)
-	// protocol.PlayerBoxAddPosition(builder, protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z))
-	// playerBox := protocol.PlayerBoxEnd(builder)
-	//
-	// protocol.NetworkMessageStart(builder)
-	// protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadPlayerBox)
-	// protocol.NetworkMessageAddPayload(builder, playerBox)
-	// netMsg := protocol.NetworkMessageEnd(builder)
-	//
-	// builder.Finish(netMsg)
+	id := builder.CreateString(b.id)
+	owner := builder.CreateString(b.owner)
+
+	protocol.BallStart(builder)
+	protocol.BallAddId(builder, id)
+	protocol.BallAddOwner(builder, owner)
+	protocol.BallAddPosition(builder, protocol.CreateVector3(builder, b.position.X, b.position.Y, b.position.Z))
+	ball := protocol.BallEnd(builder)
+
+	protocol.NetworkMessageStart(builder)
+	protocol.NetworkMessageAddPayloadType(builder, protocol.PayloadBall)
+	protocol.NetworkMessageAddPayload(builder, ball)
+	netMsg := protocol.NetworkMessageEnd(builder)
+
+	builder.Finish(netMsg)
 
 	return builder.FinishedBytes()
 }

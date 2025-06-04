@@ -177,6 +177,16 @@ func (n *Network) readData(conn net.Conn, data []byte, bytes int) {
 							position := fbBox.Position(fbPosition)
 							playerBox := NewFBPlayerBox(id, owner, *position)
 							n.objRegistry.Add(playerBox)
+						case protocol.GameObjectUnionBall:
+							fbPosition := new(protocol.Vector3)
+							fbBall := new(protocol.Ball)
+							fbBall.Init(objectUnionTable.Bytes, objectUnionTable.Pos)
+
+							id := string(fbBall.Id())
+							owner := string(fbBall.Owner())
+							position := fbBall.Position(fbPosition)
+							ball := NewFBBall(id, owner, *position)
+							n.objRegistry.Add(ball)
 						}
 					}
 				}
@@ -190,6 +200,21 @@ func (n *Network) readData(conn net.Conn, data []byte, bytes int) {
 			fbBox.Init(table.Bytes, table.Pos)
 			id := string(fbBox.Id())
 			position := fbBox.Position(fbPosition)
+			obj, err := n.objRegistry.Get(id)
+			if err != nil {
+				break
+			}
+			obj.UpdatePosition(position.X(), position.Y(), position.Z())
+		}
+	case protocol.PayloadBall:
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			fbPosition := new(protocol.Vector3)
+			fbBall := new(protocol.Ball)
+			fbBall.Init(table.Bytes, table.Pos)
+
+			id := string(fbBall.Id())
+			position := fbBall.Position(fbPosition)
 			obj, err := n.objRegistry.Get(id)
 			if err != nil {
 				break

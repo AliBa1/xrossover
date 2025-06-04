@@ -177,6 +177,21 @@ func readData(conn net.Conn, data []byte, n int) {
 
 			broadcast("tcp", "", g.ObjectRegistry.Serialize())
 		}
+	case protocol.PayloadBall:
+		table := new(flatbuffers.Table)
+		if msg.Payload(table) {
+			fbPosition := new(protocol.Vector3)
+			fbBall := new(protocol.Ball)
+			fbBall.Init(table.Bytes, table.Pos)
+
+			id := string(fbBall.Id())
+			owner := string(fbBall.Owner())
+			position := fbBall.Position(fbPosition)
+			ball := game.NewBall(id, owner, *position)
+			g.ObjectRegistry.Add(ball)
+
+			broadcast("tcp", "", g.ObjectRegistry.Serialize())
+		}
 	// case protocol.PayloadMovement:
 	// 	// log.Println("recieved movement data")
 	// 	table := new(flatbuffers.Table)

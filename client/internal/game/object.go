@@ -19,8 +19,9 @@ type GameObject interface {
 	Owner() string
 	Position() rl.Vector3
 	UpdatePosition(x, y, z float32)
-	Dimensions() Dimensions
+	// Dimensions() Dimensions
 	Color() color.RGBA
+	Draw()
 	Update(dt float32)
 	Serialize() []byte
 }

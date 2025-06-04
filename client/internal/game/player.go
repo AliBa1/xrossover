@@ -61,6 +61,11 @@ func (p *PlayerBox) Update(dt float32) {
 
 }
 
+func (p *PlayerBox) Draw() {
+	rl.DrawCube(p.position, p.width, p.height, p.length, p.color)
+	rl.DrawCubeWires(p.position, 1.0, 1.0, 1.0, rl.Maroon)
+}
+
 func (p *PlayerBox) Move(x, y, z float32) {
 	p.position.X += x
 	p.position.Y += y

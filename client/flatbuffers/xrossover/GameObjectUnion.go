@@ -9,16 +9,19 @@ type GameObjectUnion byte
 const (
 	GameObjectUnionNONE      GameObjectUnion = 0
 	GameObjectUnionPlayerBox GameObjectUnion = 1
+	GameObjectUnionBall      GameObjectUnion = 2
 )
 
 var EnumNamesGameObjectUnion = map[GameObjectUnion]string{
 	GameObjectUnionNONE:      "NONE",
 	GameObjectUnionPlayerBox: "PlayerBox",
+	GameObjectUnionBall:      "Ball",
 }
 
 var EnumValuesGameObjectUnion = map[string]GameObjectUnion{
 	"NONE":      GameObjectUnionNONE,
 	"PlayerBox": GameObjectUnionPlayerBox,
+	"Ball":      GameObjectUnionBall,
 }
 
 func (v GameObjectUnion) String() string {

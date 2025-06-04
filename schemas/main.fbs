@@ -17,6 +17,12 @@ table PlayerBox {
 	position: Vector3;
 }
 
+table Ball {
+	id: string;
+	owner: string;
+	position: Vector3;
+}
+
 // table Movement {
 //	object_id: string;
 //	object_owner: string;
@@ -36,7 +42,7 @@ table PlayerInput {
 	action: Action;
 }
 
-union GameObjectUnion { PlayerBox }
+union GameObjectUnion { PlayerBox, Ball }
 
 table GameObjectWrapper {
 	object: GameObjectUnion;
@@ -50,6 +56,7 @@ union Payload {
 	ConnectionRequest,
 	ObjectRegistry,
 	PlayerBox,
+	Ball,
 	PlayerInput
 }
 
