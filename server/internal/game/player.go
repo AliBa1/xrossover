@@ -62,3 +62,20 @@ func (p *PlayerBox) Serialize() []byte {
 
 	return builder.FinishedBytes()
 }
+
+func (p *PlayerBox) SerializeRegistry(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+	id := builder.CreateString(p.id)
+	owner := builder.CreateString(p.owner)
+
+	protocol.PlayerBoxStart(builder)
+	protocol.PlayerBoxAddId(builder, id)
+	protocol.PlayerBoxAddOwner(builder, owner)
+	protocol.PlayerBoxAddPosition(builder, protocol.CreateVector3(builder, p.position.X, p.position.Y, p.position.Z))
+	playerBox := protocol.PlayerBoxEnd(builder)
+
+	protocol.GameObjectWrapperStart(builder)
+	protocol.GameObjectWrapperAddObjectType(builder, protocol.GameObjectUnionPlayerBox)
+	protocol.GameObjectWrapperAddObject(builder, playerBox)
+	gameObjectWrapper := protocol.GameObjectWrapperEnd(builder)
+	return gameObjectWrapper
+}

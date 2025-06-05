@@ -217,6 +217,7 @@ func (n *Network) readData(conn net.Conn, data []byte, bytes int) {
 			position := fbBall.Position(fbPosition)
 			obj, err := n.objRegistry.Get(id)
 			if err != nil {
+				log.Println("Ball not in registry:", err)
 				break
 			}
 			obj.UpdatePosition(position.X(), position.Y(), position.Z())

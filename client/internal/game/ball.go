@@ -42,7 +42,7 @@ func NewFBBall(id, owner string, pos protocol.Vector3) *Ball {
 		radius:       0.5,
 		velocity:     rl.Vector3{X: 0.0, Y: 3.0, Z: 0.0},
 		acceleration: rl.Vector3{X: 0.0, Y: Gravity, Z: 0.0},
-		color:        rl.Red,
+		color:        rl.Blue,
 	}
 }
 
@@ -76,7 +76,7 @@ func (b *Ball) Update(dt float32) {
 }
 
 func (b *Ball) Draw() {
-	rl.DrawSphere(b.position, b.radius, rl.Orange)
+	rl.DrawSphere(b.position, b.radius, b.color)
 }
 
 func (b *Ball) UpdatePosition(x, y, z float32) {

@@ -187,30 +187,17 @@ func readData(conn net.Conn, data []byte, n int) {
 			id := string(fbBall.Id())
 			owner := string(fbBall.Owner())
 			position := fbBall.Position(fbPosition)
-			ball := game.NewBall(id, owner, *position)
-			g.ObjectRegistry.Add(ball)
+			ball, err := g.ObjectRegistry.Get(id)
+			// if ball not in registry
+			if err != nil {
+				ball = game.NewBall(id, owner, *position)
+				g.ObjectRegistry.Add(ball)
+				broadcast("tcp", "", g.ObjectRegistry.Serialize())
+				return
+			}
 
-			broadcast("tcp", "", g.ObjectRegistry.Serialize())
+			broadcast("udp", owner, ball.Serialize())
 		}
-	// case protocol.PayloadMovement:
-	// 	// log.Println("recieved movement data")
-	// 	table := new(flatbuffers.Table)
-	// 	if msg.Payload(table) {
-	// 		fbDirection := new(protocol.Vector3)
-	// 		fbMovement := new(protocol.Movement)
-	// 		fbMovement.Init(table.Bytes, table.Pos)
-	// 		id := string(fbMovement.ObjectId())
-	// 		owner := string(fbMovement.ObjectOwner())
-	// 		direction := fbMovement.Direction(fbDirection)
-	// 		obj, err := g.ObjectRegistry.Get(id)
-	// 		if err != nil {
-	// 			log.Println(err)
-	// 			return
-	// 		}
-	// 		obj.Move(direction.X(), direction.Y(), direction.Z())
-	// 		// TODO: change to udp and fix for udp
-	// 		broadcast("tcp", owner, obj.Serialize())
-	// 	}
 	case protocol.PayloadPlayerInput:
 		table := new(flatbuffers.Table)
 		if msg.Payload(table) {
@@ -218,7 +205,6 @@ func readData(conn net.Conn, data []byte, n int) {
 			fbInput.Init(table.Bytes, table.Pos)
 			input := deserializeInput(fbInput)
 			g.AddPlayerInput(input)
-			// broadcast("tcp", owner, obj.Serialize())
 		}
 	default:
 		log.Println("Received without type:", msg.PayloadType())
