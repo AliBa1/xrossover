@@ -33,9 +33,15 @@ func (b *Ball) Position() rl.Vector3 {
 	return b.position
 }
 
-// func (p *Ball) Update()
+// func (b *Ball) Update()
 
-func (b *Ball) Move(x float32, y float32, z float32) {
+func (b *Ball) UpdatePosition(x, y, z float32) {
+	b.position.X = x
+	b.position.Y = y
+	b.position.Z = z
+}
+
+func (b *Ball) Move(x, y, z float32) {
 	b.position.X += x
 	b.position.Y += y
 	b.position.Z += z

@@ -15,6 +15,7 @@ type GameObject interface {
 	Position() rl.Vector3
 	Move(x float32, y float32, z float32)
 	// Update(dt float32)
+	UpdatePosition(x, y, z float32)
 	Serialize() []byte
 	SerializeRegistry(builder *flatbuffers.Builder) flatbuffers.UOffsetT
 }

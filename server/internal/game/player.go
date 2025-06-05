@@ -35,7 +35,9 @@ func (p *PlayerBox) Position() rl.Vector3 {
 
 // func (p *PlayerBox) Update()
 
-func (p *PlayerBox) Move(x float32, y float32, z float32) {
+func (p *PlayerBox) UpdatePosition(x, y, z float32) {}
+
+func (p *PlayerBox) Move(x, y, z float32) {
 	p.position.X += x
 	p.position.Y += y
 	p.position.Z += z

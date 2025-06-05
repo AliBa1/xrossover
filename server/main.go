@@ -196,6 +196,7 @@ func readData(conn net.Conn, data []byte, n int) {
 				return
 			}
 
+			ball.UpdatePosition(position.X(), position.Y(), position.Z())
 			broadcast("udp", owner, ball.Serialize())
 		}
 	case protocol.PayloadPlayerInput:
