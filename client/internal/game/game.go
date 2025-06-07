@@ -154,6 +154,11 @@ func (g *Game) processInput() {
 	} else if rl.IsKeyPressed(rl.KeyC) && g.network.IsConnected() {
 		g.network.Disconnect()
 	}
+
+	// shoot ball
+	if rl.IsKeyPressed(rl.KeyB) {
+		g.ball.Shoot(g.hoop.rim.position)
+	}
 }
 
 func (g *Game) sendMovement(x float32, y float32, z float32) {

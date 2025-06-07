@@ -21,6 +21,16 @@ type Ball struct {
 	color        color.RGBA
 }
 
+func (b *Ball) Shoot(target rl.Vector3) {
+	target = rl.Vector3Normalize(target)
+
+	b.velocity.X = target.X * 10
+	b.velocity.Y = target.Y * 10
+	b.velocity.Z = target.Z * 10
+
+	b.possessor = nil
+}
+
 func NewBall(id, owner string, possessor GameObject) *Ball {
 	return &Ball{
 		id:           id,

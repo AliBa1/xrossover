@@ -161,7 +161,7 @@ func (n *Network) readData(conn net.Conn, data []byte, bytes int) {
 			objectRegistry := new(protocol.ObjectRegistry)
 			objectRegistry.Init(table.Bytes, table.Pos)
 
-			for i := 0; i < objectRegistry.ObjectsLength(); i++ {
+			for i := range objectRegistry.ObjectsLength() {
 				var objectWrapper protocol.GameObjectWrapper
 				if objectRegistry.Objects(&objectWrapper, i) {
 					objectUnionTable := new(flatbuffers.Table)
