@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math/rand"
 	protocol "xrossover-client/flatbuffers/xrossover"
 
 	"image/color"
@@ -21,9 +22,20 @@ type Ball struct {
 	color        color.RGBA
 }
 
-func (b *Ball) Shoot(target rl.Vector3) {
+func (b *Ball) Shoot(target rl.Vector3, rimRadius float32) {
 	// adjust for different arc
-	time := float32(1.5)
+	time := rand.Float32() + 0.75
+
+	// randomize shot target
+	minOffsetX := target.X - rimRadius
+	maxOffsetX := target.X + rimRadius
+	offsetX := rand.Float32()*(maxOffsetX-minOffsetX) + minOffsetX
+	target.X = offsetX
+	minOffsetZ := target.Z - rimRadius
+	maxOffsetZ := target.Z + rimRadius
+	offsetZ := rand.Float32()*(maxOffsetZ-minOffsetZ) + minOffsetZ
+	target.Z = offsetZ
+
 	gravityVec := rl.Vector3{
 		X: 0,
 		Y: Gravity,
@@ -95,6 +107,32 @@ func (b *Ball) Update(dt float32) {
 	} else if b.position.Y+b.radius > bounceHeight {
 		b.velocity.Y *= -1
 		b.position.Y = bounceHeight - b.radius
+	}
+}
+
+func (b *Ball) DetectCollision(dt float32, hoop Hoop) {
+	backboardLeftX := hoop.backboard.position.X - hoop.backboard.dimensions.Width
+	backboardRightX := hoop.backboard.position.X + hoop.backboard.dimensions.Width
+	ballLeftX := b.position.X - b.radius
+	ballRightX := b.position.X + b.radius
+	collidesBackboardX := ballRightX > backboardLeftX && ballLeftX < backboardRightX
+
+	backboardDownY := hoop.backboard.position.Y - hoop.backboard.dimensions.Height
+	backboardUpY := hoop.backboard.position.Y + hoop.backboard.dimensions.Height
+	ballDownY := b.position.Y - b.radius
+	ballUpY := b.position.Y + b.radius
+	collidesBackboardY := ballUpY > backboardDownY && ballDownY < backboardUpY
+
+	backboardBackZ := hoop.backboard.position.Z - hoop.backboard.dimensions.Length
+	backboardForwardZ := hoop.backboard.position.Z + hoop.backboard.dimensions.Length
+	ballBackZ := b.position.Z - b.radius
+	ballForwardZ := b.position.Z + b.radius
+	collidesBackboardZ := ballForwardZ > backboardBackZ && ballBackZ < backboardForwardZ
+
+	if collidesBackboardX && collidesBackboardY && collidesBackboardZ {
+		// b.velocity.X *= -1
+		// b.velocity.Y *= -1
+		b.velocity.Z *= -1
 	}
 }
 

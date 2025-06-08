@@ -81,6 +81,7 @@ func (g *Game) shutdown() {
 func (g *Game) update(dt float32) {
 	// rl.UpdateCamera(&g.camera, rl.CameraFree)
 	g.ball.Update(dt)
+	g.ball.DetectCollision(dt, *g.hoop)
 
 	if g.network.IsConnected() {
 		g.network.WriteUDP(g.ball.Serialize())
@@ -172,7 +173,7 @@ func (g *Game) processInput() {
 
 	// shoot ball
 	if rl.IsKeyPressed(rl.KeyB) {
-		g.ball.Shoot(g.hoop.rim.position)
+		g.ball.Shoot(g.hoop.rim.position, g.hoop.rim.radius)
 	}
 
 	// retrieve ball
