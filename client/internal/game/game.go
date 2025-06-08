@@ -99,12 +99,27 @@ func (g *Game) updateDrawing() {
 		rl.DrawText(obj.ID(), int32(objScreenPosition.X)-rl.MeasureText(obj.ID(), 20)/2, int32(objScreenPosition.Y), 20, rl.Black)
 	}
 
+	textRight := make([]string, 0)
+
 	if g.network.IsConnected() {
-		text := "Connected to Server - Press [C] to disconnect"
-		rl.DrawText(text, WIDTH-rl.MeasureText(text, 20)-10, 20, 20, rl.Black)
+		textRight = append(textRight, "Connected to Server - Press [C] to disconnect")
+		// text := "Connected to Server - Press [C] to disconnect"
+		// rl.DrawText(text, WIDTH-rl.MeasureText(text, 20)-10, 20, 20, rl.Black)
 	} else {
-		text := "Press [C] to connect to server"
-		rl.DrawText(text, WIDTH-rl.MeasureText(text, 20)-10, 20, 20, rl.Black)
+		textRight = append(textRight, "Press [C] to connect to server")
+		// text := "Press [C] to connect to server"
+		// rl.DrawText(text, WIDTH-rl.MeasureText(text, 20)-10, 20, 20, rl.Black)
+	}
+
+	textRight = append(textRight, "Press [B] to shoot")
+	textRight = append(textRight, "Press [N] to retrieve ball")
+
+	fontSize := int32(16)
+	positionY := int32(20)
+	gap := int32(20)
+	for _, text := range textRight {
+		rl.DrawText(text, WIDTH-rl.MeasureText(text, fontSize)-10, positionY, fontSize, rl.Black)
+		positionY += gap
 	}
 
 	rl.DrawFPS(20, 20)
@@ -158,6 +173,11 @@ func (g *Game) processInput() {
 	// shoot ball
 	if rl.IsKeyPressed(rl.KeyB) {
 		g.ball.Shoot(g.hoop.rim.position)
+	}
+
+	// retrieve ball
+	if rl.IsKeyPressed(rl.KeyN) {
+		g.ball.AssignTo(g.box)
 	}
 }
 

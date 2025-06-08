@@ -22,13 +22,26 @@ type Ball struct {
 }
 
 func (b *Ball) Shoot(target rl.Vector3) {
-	target = rl.Vector3Normalize(target)
+	// adjust for different arc
+	time := float32(1.5)
+	gravityVec := rl.Vector3{
+		X: 0,
+		Y: Gravity,
+		Z: 0,
+	}
 
-	b.velocity.X = target.X * 10
-	b.velocity.Y = target.Y * 10
-	b.velocity.Z = target.Z * 10
+	displacement := rl.Vector3Subtract(target, b.position)
+	halfGT2 := rl.Vector3Scale(gravityVec, 0.5*time*time)
+	numerator := rl.Vector3Subtract(displacement, halfGT2)
+	newVelocity := rl.Vector3Scale(numerator, 1.0/time)
+
+	b.velocity = newVelocity
 
 	b.possessor = nil
+}
+
+func (b *Ball) AssignTo(player GameObject) {
+	b.possessor = player
 }
 
 func NewBall(id, owner string, possessor GameObject) *Ball {
@@ -62,19 +75,19 @@ func (b *Ball) Position() rl.Vector3 { return b.position }
 func (b *Ball) Color() color.RGBA    { return b.color }
 
 func (b *Ball) Update(dt float32) {
+	var bounceHeight float32
 	if b.possessor != nil {
 		b.position.X = b.possessor.Position().X + 0.5
 		b.position.Z = b.possessor.Position().Z - 0.5
+		bounceHeight = 3.0
 	} else {
 		b.position.X += b.velocity.X * dt
 		b.position.Z += b.velocity.Z * dt
+		bounceHeight = 3000000
 	}
 
-	b.velocity.Y += b.acceleration.Y * dt
-	b.position.Y += b.velocity.Y * dt
+	b.applyGravity(dt)
 
-	var bounceHeight float32
-	bounceHeight = 3.0
 	if b.position.Y-b.radius < GroundY {
 		b.velocity.Y *= -1
 		// b.velocity.Y *= -0.7
@@ -83,6 +96,11 @@ func (b *Ball) Update(dt float32) {
 		b.velocity.Y *= -1
 		b.position.Y = bounceHeight - b.radius
 	}
+}
+
+func (b *Ball) applyGravity(dt float32) {
+	b.velocity.Y += b.acceleration.Y * dt
+	b.position.Y += b.velocity.Y * dt
 }
 
 func (b *Ball) Draw() {
