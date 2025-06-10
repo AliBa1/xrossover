@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"math/rand"
 	protocol "xrossover-client/flatbuffers/xrossover"
 
@@ -133,6 +134,25 @@ func (b *Ball) DetectCollision(dt float32, hoop Hoop) {
 		// b.velocity.X *= -1
 		// b.velocity.Y *= -1
 		b.velocity.Z *= -1
+	}
+
+	// chatgpt rim collision
+	rimCenter := hoop.rim.position
+	ballXZ := rl.Vector2{X: b.position.X, Y: b.position.Z}
+	rimCenterXZ := rl.Vector2{X: rimCenter.X, Y: rimCenter.Z}
+
+	// 2D distance from ball center to rim center (in XZ plane)
+	distanceXZ := rl.Vector2Length(rl.Vector2Subtract(ballXZ, rimCenterXZ))
+
+	// Rim collision condition: within rim radius +/- ball radius
+	if distanceXZ <= hoop.rim.radius+b.radius && distanceXZ >= hoop.rim.radius-b.radius {
+		// Optional: Add vertical position check too, if needed
+		if math.Abs(float64(b.position.Y-rimCenter.Y)) <= float64(b.radius) {
+			// Respond to collision - e.g., reflect horizontal velocity
+			// This is simplified and can be improved with proper normals
+			b.velocity.X *= -0.7 // Invert and dampen horizontal velocity
+			b.velocity.Z *= -0.7
+		}
 	}
 }
 

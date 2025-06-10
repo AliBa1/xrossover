@@ -38,7 +38,8 @@ func (g *Game) Run() {
 func (g *Game) initialize() {
 	rl.InitWindow(WIDTH, HEIGHT, g.Username+"'s Game Window")
 	g.camera = rl.Camera3D{
-		Position:   rl.Vector3{X: 0, Y: 10, Z: 20},
+		// Position:   rl.Vector3{X: 0, Y: 10, Z: 20},
+		Position:   rl.Vector3{X: -5, Y: 15, Z: 20},
 		Target:     rl.Vector3{X: 0, Y: 5, Z: 0},
 		Up:         rl.Vector3{X: 0, Y: 1, Z: 0},
 		Fovy:       45.0,
@@ -79,7 +80,7 @@ func (g *Game) shutdown() {
 }
 
 func (g *Game) update(dt float32) {
-	rl.UpdateCamera(&g.camera, rl.CameraFree)
+	// rl.UpdateCamera(&g.camera, rl.CameraFree)
 	g.ball.Update(dt)
 	g.ball.DetectCollision(dt, *g.hoop)
 
