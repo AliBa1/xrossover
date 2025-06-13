@@ -17,13 +17,15 @@ const (
 )
 
 type Game struct {
-	Username    string
-	camera      rl.Camera3D
-	box         *PlayerBox
-	ball        *Ball
-	hoop        *Hoop
-	objRegistry *ObjectRegistry
-	network     *Network
+	Username      string
+	camera        rl.Camera3D
+	box           *PlayerBox
+	ball          *Ball
+	hoop          *Hoop
+	objRegistry   *ObjectRegistry
+	network       *Network
+	points        int
+	scoreCooldown float32
 }
 
 func NewGame(username string, net *Network, objRegistry *ObjectRegistry) *Game {
@@ -50,6 +52,7 @@ func (g *Game) initialize() {
 	g.box = NewPlayerBox(g.Username+"-Box", g.Username)
 	g.ball = NewBall(g.Username+"-Ball", g.Username, g.box)
 	g.hoop = NewHoop(0.0, -5.0)
+	g.points = 0
 
 	g.objRegistry.Add(g.box)
 	g.objRegistry.Add(g.ball)
@@ -89,6 +92,10 @@ func (g *Game) update(dt float32) {
 		g.network.WriteUDP(g.ball.Serialize())
 	}
 
+	if g.scoreCooldown > 0 {
+		g.scoreCooldown -= dt
+	}
+
 	g.detectScore()
 }
 
@@ -98,8 +105,10 @@ func (g *Game) detectScore() {
 	ballInRimZ := g.ball.position.Z+g.ball.radius > g.hoop.rim.position.Z-g.hoop.rim.radius && g.ball.position.Z-g.ball.radius < g.hoop.rim.position.Z+g.hoop.rim.radius
 	ballGoingDown := g.ball.velocity.Y < 0
 
-	if ballBelowRim && ballInRimX && ballInRimZ && ballGoingDown {
+	if g.scoreCooldown <= 0 && ballBelowRim && ballInRimX && ballInRimZ && ballGoingDown {
 		fmt.Println("Score!!!!!")
+		g.points += 1
+		g.scoreCooldown = 1.0
 	}
 }
 
@@ -129,6 +138,7 @@ func (g *Game) updateDrawing() {
 
 	textRight = append(textRight, "Press [B] to shoot")
 	textRight = append(textRight, "Press [N] to retrieve ball")
+	textRight = append(textRight, fmt.Sprintf("Points: %d", g.points))
 
 	fontSize := int32(16)
 	positionY := int32(20)
