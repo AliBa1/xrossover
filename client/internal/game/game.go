@@ -102,7 +102,7 @@ func (g *Game) update(dt float32) {
 func (g *Game) detectScore() {
 	ballBelowRim := g.ball.position.Y+g.ball.radius < g.hoop.rim.position.Y
 	ballInRimX := g.ball.position.X+g.ball.radius > g.hoop.rim.position.X-g.hoop.rim.radius && g.ball.position.X-g.ball.radius < g.hoop.rim.position.X+g.hoop.rim.radius
-	ballInRimZ := g.ball.position.Z+g.ball.radius > g.hoop.rim.position.Z-g.hoop.rim.radius && g.ball.position.Z-g.ball.radius < g.hoop.rim.position.Z+g.hoop.rim.radius
+	ballInRimZ := g.ball.position.Z-g.ball.radius > g.hoop.rim.position.Z-g.hoop.rim.radius && g.ball.position.Z+g.ball.radius < g.hoop.rim.position.Z+g.hoop.rim.radius
 	ballGoingDown := g.ball.velocity.Y < 0
 
 	if g.scoreCooldown <= 0 && ballBelowRim && ballInRimX && ballInRimZ && ballGoingDown {
