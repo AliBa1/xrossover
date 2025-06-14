@@ -7,9 +7,9 @@ As of now I am using raylib to create the game and Golang on the client and serv
 ## Run Server
 - cd /server
 - make
-- ./xrossover-server
+- ./xrossover-server [username] [port]
 
 ## Run Client
 - cd /client
 - make
-- ./xrossover-client
+- ./xrossover-client [username] [port]
