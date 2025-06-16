@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	protocol "xrossover-client/flatbuffers/xrossover"
@@ -131,6 +132,7 @@ func (b *Ball) DetectCollision(dt float32, hoop Hoop) {
 	collidesBackboardZ := ballForwardZ > backboardBackZ && ballBackZ < backboardForwardZ
 
 	if collidesBackboardX && collidesBackboardY && collidesBackboardZ {
+		fmt.Println("ball and backboard collision")
 		// b.velocity.X *= -1
 		// b.velocity.Y *= -1
 		b.velocity.Z *= -1
@@ -148,6 +150,7 @@ func (b *Ball) DetectCollision(dt float32, hoop Hoop) {
 	if distanceXZ <= hoop.rim.radius+b.radius && distanceXZ >= hoop.rim.radius-b.radius {
 		// Optional: Add vertical position check too, if needed
 		if math.Abs(float64(b.position.Y-rimCenter.Y)) <= float64(b.radius) {
+			fmt.Println("ball and rim collision")
 			// Respond to collision - e.g., reflect horizontal velocity
 			// This is simplified and can be improved with proper normals
 			b.velocity.X *= -0.7 // Invert and dampen horizontal velocity
