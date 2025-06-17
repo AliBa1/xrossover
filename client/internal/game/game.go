@@ -138,7 +138,7 @@ func (g *Game) updateDrawing() {
 
 	textRight = append(textRight, "Press [B] to shoot")
 	textRight = append(textRight, "Press [N] to retrieve ball")
-	textRight = append(textRight, fmt.Sprintf("Points: %d", g.points))
+	textRight = append(textRight, fmt.Sprintf("%s's Points: %d", g.Username, g.points))
 
 	fontSize := int32(16)
 	positionY := int32(20)
